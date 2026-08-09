@@ -24,6 +24,9 @@ export class MarbleDropGame {
     this.registry = new CollisionRegistry();
     this.resolver = null;
 
+    // Gate lock set to prevent repeated resolves while still overlapping
+    this.blockedGates = new Set();
+
     // FeedbackService: injected in tests, created in production
     if (feedbackService !== undefined && feedbackService !== null) {
       this.feedback = feedbackService;
@@ -132,6 +135,7 @@ export class MarbleDropGame {
       if (handle !== null) {
         this.registry.register(handle, {
           type: 'gate',
+          id: g.id,
           entity: gate,
           operator: g.operator,
           operand: g.operand,
@@ -163,6 +167,7 @@ export class MarbleDropGame {
       if (handle !== null) {
         this.registry.register(handle, {
           type: 'goal',
+          id: gl.id,
           entity: goal,
           value: gl.value,
           operator: gl.operator || '-',
@@ -278,6 +283,22 @@ export class MarbleDropGame {
       this.checkOutOfBounds();
     }
 
+    // Unblock gates when active gacoan is no longer overlapping them
+    if (this.blockedGates.size > 0 && this.activeGacoan) {
+      const toRemove = [];
+      for (const gid of this.blockedGates) {
+        const gate = this.gates.find((gg) => gg.id === gid);
+        if (!gate) {
+          toRemove.push(gid);
+          continue;
+        }
+        if (!this._isOverlapping(this.activeGacoan, gate)) {
+          toRemove.push(gid);
+        }
+      }
+      for (const gid of toRemove) this.blockedGates.delete(gid);
+    }
+
     // Process HOLDING expiry
     if (state === GAMEPLAY_STATE.HOLDING) {
       if (this.session.isHoldExpired(nowMs)) {
@@ -350,23 +371,57 @@ export class MarbleDropGame {
       // Peg: physics only, no gameplay operation
       if (targetMeta.type === 'peg') return;
 
-      if (targetMeta.type === 'gate' || targetMeta.type === 'goal') {
+      if (targetMeta.type === 'gate') {
+        // Determine gate id and check block set
+        const gateEntity = targetMeta.entity;
+        const gateId = gateEntity && gateEntity.id ? gateEntity.id : (targetMeta.id || null);
+        if (!gateId) return;
+
+        // If gate currently blocked for this active gacoan, ignore
+        if (this.blockedGates.has(gateId)) return;
+
+        // Block gate deterministically before resolving to prevent duplicate commits
+        this.blockedGates.add(gateId);
+
         // Caller must transition session to RESOLVING before invoking resolver
         try {
           if (this.session && typeof this.session.beginResolve === 'function' && this.session.getState() === GAMEPLAY_STATE.FALLING) {
             this.session.beginResolve();
           }
         } catch (e) {
-          // If transition fails, skip resolving
+          // If transition fails, unblock and skip
+          this.blockedGates.delete(gateId);
           console.error('[MarbleDropGame] beginResolve failed:', e);
           return;
         }
 
-        const isGoal = targetMeta.type === 'goal';
         const res = this.resolver.resolveOperationHit({
-          operator: isGoal ? targetMeta.operator : targetMeta.operator,
-          operand: isGoal ? targetMeta.value : targetMeta.operand,
-          isGoal: isGoal,
+          operator: targetMeta.operator,
+          operand: targetMeta.operand,
+          isGoal: false,
+        });
+
+        if (res && res.ok) {
+          this._startHold(res);
+        } else {
+          // If resolve failed, ensure gate is unblocked so it can be retried
+          this.blockedGates.delete(gateId);
+        }
+      } else if (targetMeta.type === 'goal') {
+        // Goals are terminal for the gacoan lifecycle — treat normally without gate blocking
+        try {
+          if (this.session && typeof this.session.beginResolve === 'function' && this.session.getState() === GAMEPLAY_STATE.FALLING) {
+            this.session.beginResolve();
+          }
+        } catch (e) {
+          console.error('[MarbleDropGame] beginResolve failed for goal:', e);
+          return;
+        }
+
+        const res = this.resolver.resolveOperationHit({
+          operator: targetMeta.operator,
+          operand: targetMeta.value,
+          isGoal: true,
         });
 
         if (res && res.ok) {
@@ -374,6 +429,33 @@ export class MarbleDropGame {
         }
       }
     });
+  }
+
+  _isOverlapping(gacoan, gate) {
+    // Rectangle (gate) vs circle (gacoan) overlap test — use container positions and gate dimensions
+    try {
+      const gPos = gate.container ? { x: gate.container.position.x, y: gate.container.position.y } : { x: gate.x, y: gate.y };
+      const gcPos = gacoan.getPosition ? gacoan.getPosition() : (gacoan.container ? { x: gacoan.container.x, y: gacoan.container.y } : { x: 0, y: 0 });
+
+      const rx = gPos.x - gate.width / 2;
+      const ry = gPos.y - gate.height / 2;
+      const rw = gate.width;
+      const rh = gate.height;
+
+      const cx = gcPos.x;
+      const cy = gcPos.y;
+      const radius = gacoan.radiusPx || 40;
+
+      // Find closest point to circle within rectangle
+      const closestX = Math.max(rx, Math.min(cx, rx + rw));
+      const closestY = Math.max(ry, Math.min(cy, ry + rh));
+
+      const dx = cx - closestX;
+      const dy = cy - closestY;
+      return (dx * dx + dy * dy) < (radius * radius);
+    } catch (e) {
+      return false;
+    }
   }
 
   _startHold(resolveResult) {

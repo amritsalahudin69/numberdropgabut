@@ -12,7 +12,8 @@
     "test:foundation": "node tests/asset-service.test.mjs && node tests/boot-contract.test.mjs",
     "test:core": "node tests/calculation.test.mjs && node tests/session.test.mjs && node tests/collision-resolver.test.mjs && node tests/level-assets.test.mjs && node tests/restart-cleanup.test.mjs",
     "test:lifecycle": "node tests/lifecycle-hardening.test.mjs",
-    "check": "npm run assets:index && npm run assets:validate && npm run assets:level && npm run test:foundation && npm run test:core && npm run test:lifecycle && npm run build"
+    "test:gate-lock": "node tests/gate-lock.test.mjs",
+    "check": "npm run assets:index && npm run assets:validate && npm run assets:level && npm run test:foundation && npm run test:core && npm run test:lifecycle && npm run test:gate-lock && npm run build"
   },
   "dependencies": {
     "@bacnh85/pi-agy": "^0.3.1",
