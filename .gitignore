@@ -1,3 +1,6 @@
 /node_modules
-*.png
-*.gif
+/public/assets/backgrounds/*.png
+/public/assets/backgrounds/*.webp
+/public/assets/backgrounds/*.jpg
+/public/assets/numbers/*.png
+/public/assets/gif/*.gif
