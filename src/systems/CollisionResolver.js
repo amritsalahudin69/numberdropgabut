@@ -57,12 +57,14 @@ export class CollisionResolver {
     }
 
     // Commit state transaction atomically
+    // Commit state transaction atomically
     this.session.currentValue = nextValue;
     gacoan.setValue(nextValue, nextTexture);
 
     // Verify invariant
     if (this.session.getCurrentValue() !== gacoan.value) {
       this.session.transitionTo(GAMEPLAY_STATE.ERROR);
+      console.error('[CollisionResolver] Invariant mismatch:', { sessionValue: this.session.getCurrentValue(), gacoanValue: gacoan.value });
       throw new Error(`Invariant violation: session.currentValue (${this.session.getCurrentValue()}) !== gacoan.value (${gacoan.value})`);
     }
 

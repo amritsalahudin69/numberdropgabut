@@ -11,14 +11,15 @@
     "assets:level": "node scripts/validate-level-assets.mjs",
     "test:foundation": "node tests/asset-service.test.mjs && node tests/boot-contract.test.mjs",
     "test:core": "node tests/calculation.test.mjs && node tests/session.test.mjs && node tests/collision-resolver.test.mjs && node tests/level-assets.test.mjs && node tests/restart-cleanup.test.mjs",
+    "test:feedback": "node tests/feedback-service.test.mjs && node tests/hold-lifecycle.test.mjs && node tests/gacoan-freeze.test.mjs && node tests/reset-during-hold.test.mjs",
     "test:lifecycle": "node tests/lifecycle-hardening.test.mjs",
     "test:gate-lock": "node tests/gate-lock.test.mjs",
-    "check": "npm run assets:index && npm run assets:validate && npm run assets:level && npm run test:foundation && npm run test:core && npm run test:lifecycle && npm run test:gate-lock && npm run build"
+    "assets:visual": "node scripts/validate-visual-assets.mjs",
+    "test:visual": "node tests/visual-assets.test.mjs",
+    "check": "npm run assets:index && npm run assets:validate && npm run assets:level && npm run assets:visual && npm run test:foundation && npm run test:core && npm run test:feedback && npm run test:lifecycle && npm run test:gate-lock && npm run test:visual && npm run build"
   },
   "dependencies": {
-    "@bacnh85/pi-agy": "^0.3.1",
     "@dimforge/rapier2d-compat": "^0.14.0",
-    "ask-antigravity-mcp": "^0.4.1",
     "pixi.js": "^8.0.0",
     "vite": "^5.0.0"
   }

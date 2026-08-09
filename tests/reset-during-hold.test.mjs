@@ -85,6 +85,8 @@ async function runResetDuringHoldTests() {
   game.registry.register('gc-handle', { type: 'gacoan', entity: fakeGacoan });
 
   // Trigger gate resolution and enter HOLDING
+  // Ensure session transitions to RESOLVING before invoking resolver as production requires
+  game.session.beginResolve();
   const resolveResult = game.resolver.resolveOperationHit({
     operator: '-',
     operand: 1,

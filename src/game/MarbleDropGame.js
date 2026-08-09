@@ -24,8 +24,8 @@ export class MarbleDropGame {
     this.registry = new CollisionRegistry();
     this.resolver = null;
 
-    // Gate lock set to prevent repeated resolves while still overlapping
-    this.blockedGates = new Set();
+    // consumedGateIds: gates consumed by current active gacoan (one-drop lifetime)
+    this.consumedGateIds = new Set();
 
     // FeedbackService: injected in tests, created in production
     if (feedbackService !== undefined && feedbackService !== null) {
@@ -182,6 +182,9 @@ export class MarbleDropGame {
       if (handle !== null) this.registry.unregister(handle);
       this.activeGacoan.destroy();
       this.activeGacoan = null;
+
+      // Clear consumed gate IDs when active gacoan ownership ends
+      this.consumedGateIds.clear();
     }
 
     for (const p of this.pegs) p.destroy();
@@ -192,6 +195,9 @@ export class MarbleDropGame {
     this.gates = [];
     this.goals = [];
     this.registry.clear();
+
+    // Clear consumed gates if any — level rebuild/reset implies no active gacoan ownership
+    this.consumedGateIds.clear();
   }
 
   handlePointerDrop(evt) {
@@ -240,6 +246,9 @@ export class MarbleDropGame {
 
     this.activeGacoan = gacoan;
 
+    // New active gacoan: clear consumed gate set for fresh drop lifecycle
+    this.consumedGateIds.clear();
+
     try {
       this.session.beginDrop(gacoan);
       return true;
@@ -283,21 +292,6 @@ export class MarbleDropGame {
       this.checkOutOfBounds();
     }
 
-    // Unblock gates when active gacoan is no longer overlapping them
-    if (this.blockedGates.size > 0 && this.activeGacoan) {
-      const toRemove = [];
-      for (const gid of this.blockedGates) {
-        const gate = this.gates.find((gg) => gg.id === gid);
-        if (!gate) {
-          toRemove.push(gid);
-          continue;
-        }
-        if (!this._isOverlapping(this.activeGacoan, gate)) {
-          toRemove.push(gid);
-        }
-      }
-      for (const gid of toRemove) this.blockedGates.delete(gid);
-    }
 
     // Process HOLDING expiry
     if (state === GAMEPLAY_STATE.HOLDING) {
@@ -360,11 +354,13 @@ export class MarbleDropGame {
       if (!this.session || !this.activeGacoan) return;
       // Validate that registry entity matches current active gacoan instance
       if (gacoanMeta.entity !== this.activeGacoan) return;
+      // Ensure session and game agree on active gacoan
+      if (this.session.getActiveGacoan() !== this.activeGacoan) return;
       // Ensure entity not destroyed
       if (gacoanMeta.entity.destroyed) return;
-      // Ensure collider still registered (defensive)
+      // Ensure collider still registered (defensive) — allow handle 0
       const gHandle = gacoanMeta.entity.getColliderHandle ? gacoanMeta.entity.getColliderHandle() : null;
-      if (!gHandle || !this.registry.get(gHandle)) return;
+      if (gHandle == null || !this.registry.get(gHandle)) return;
       // Ensure session still in FALLING (events may be from previous batch)
       if (this.session.getState() !== GAMEPLAY_STATE.FALLING) return;
 
@@ -372,16 +368,16 @@ export class MarbleDropGame {
       if (targetMeta.type === 'peg') return;
 
       if (targetMeta.type === 'gate') {
-        // Determine gate id and check block set
+        // Determine gate id and check consumed set
         const gateEntity = targetMeta.entity;
         const gateId = gateEntity && gateEntity.id ? gateEntity.id : (targetMeta.id || null);
         if (!gateId) return;
 
-        // If gate currently blocked for this active gacoan, ignore
-        if (this.blockedGates.has(gateId)) return;
+        // If gate already consumed for this active gacoan, ignore
+        if (this.consumedGateIds.has(gateId)) return;
 
-        // Block gate deterministically before resolving to prevent duplicate commits
-        this.blockedGates.add(gateId);
+        // Mark gate consumed for this active gacoan before resolving to ensure once-per-gacoan semantics
+        this.consumedGateIds.add(gateId);
 
         // Caller must transition session to RESOLVING before invoking resolver
         try {
@@ -389,8 +385,8 @@ export class MarbleDropGame {
             this.session.beginResolve();
           }
         } catch (e) {
-          // If transition fails, unblock and skip
-          this.blockedGates.delete(gateId);
+          // If transition fails, remove consumed mark and skip
+          this.consumedGateIds.delete(gateId);
           console.error('[MarbleDropGame] beginResolve failed:', e);
           return;
         }
@@ -404,8 +400,9 @@ export class MarbleDropGame {
         if (res && res.ok) {
           this._startHold(res);
         } else {
-          // If resolve failed, ensure gate is unblocked so it can be retried
-          this.blockedGates.delete(gateId);
+          // If resolution failed due to arithmetic/config invariant, follow existing error behavior
+          // and DO NOT silently clear consumedGateIds to avoid infinite retries.
+          console.error('[MarbleDropGame] resolveOperationHit failed for gate:', gateId, res && res.err);
         }
       } else if (targetMeta.type === 'goal') {
         // Goals are terminal for the gacoan lifecycle — treat normally without gate blocking
@@ -429,33 +426,6 @@ export class MarbleDropGame {
         }
       }
     });
-  }
-
-  _isOverlapping(gacoan, gate) {
-    // Rectangle (gate) vs circle (gacoan) overlap test — use container positions and gate dimensions
-    try {
-      const gPos = gate.container ? { x: gate.container.position.x, y: gate.container.position.y } : { x: gate.x, y: gate.y };
-      const gcPos = gacoan.getPosition ? gacoan.getPosition() : (gacoan.container ? { x: gacoan.container.x, y: gacoan.container.y } : { x: 0, y: 0 });
-
-      const rx = gPos.x - gate.width / 2;
-      const ry = gPos.y - gate.height / 2;
-      const rw = gate.width;
-      const rh = gate.height;
-
-      const cx = gcPos.x;
-      const cy = gcPos.y;
-      const radius = gacoan.radiusPx || 40;
-
-      // Find closest point to circle within rectangle
-      const closestX = Math.max(rx, Math.min(cx, rx + rw));
-      const closestY = Math.max(ry, Math.min(cy, ry + rh));
-
-      const dx = cx - closestX;
-      const dy = cy - closestY;
-      return (dx * dx + dy * dy) < (radius * radius);
-    } catch (e) {
-      return false;
-    }
   }
 
   _startHold(resolveResult) {
@@ -515,6 +485,9 @@ export class MarbleDropGame {
     this.activeGacoan.destroy();
     this.activeGacoan = null;
 
+    // Clear consumed gate IDs when active gacoan ownership ends
+    this.consumedGateIds.clear();
+
     if (this.session.getState() === GAMEPLAY_STATE.CLEANUP) {
       this.session.finishCleanup();
     }
@@ -565,6 +538,8 @@ export class MarbleDropGame {
 
     this.clearLevelEntities();
     if (this.session) this.session.destroy();
+    // Clear consumed gates on destroy
+    this.consumedGateIds.clear();
     if (this.eventQueue) {
       try {
         this.eventQueue.free();
