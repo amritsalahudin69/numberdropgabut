@@ -7,6 +7,9 @@ import { MarbleDropRules } from '../game/MarbleDropRules.js';
 import { LEVEL_1 } from '../config/levels/level1.js';
 import { VisualTextureCache } from '../systems/VisualTextureCache.js';
 import { VISUAL_ASSETS } from '../config/visualAssets.js';
+import { TargetStrip } from '../ui/TargetStrip.js';
+import { FeedbackService } from '../systems/FeedbackService.js';
+import { SoundService } from '../systems/SoundService.js';
 
 export const APP_STATE = Object.freeze({
   CREATED: 'CREATED',
@@ -48,11 +51,26 @@ export class MarbleDropApp {
 
       MarbleDropRules.validateLevelConfig(this.level);
 
-      const requiredValues = MarbleDropRules.getReachableValues(this.level);
+      const requiredValues = MarbleDropRules.getRequiredNumberAssetValues(this.level);
       await this.textureCache.preload(requiredValues, this.assets);
 
       // Preload visual assets (must be ready before game init) — always required, not conditional
       await this.visualTextureCache.preload(VISUAL_ASSETS);
+
+      // Create UI root and services owned by the app
+      if (!this.uiRoot && this.renderer && this.renderer.app && this.renderer.app.stage) {
+        this.uiRoot = new this.renderer.app.stage.constructor(); // Container
+        this.renderer.app.stage.addChild(this.uiRoot);
+      }
+
+      this.soundService = this.soundService || new SoundService({ assetService: this.assets });
+      this.feedbackService = this.feedbackService || new FeedbackService(null, this.renderer);
+
+      // Target strip
+      this.targetStrip = new TargetStrip({ level: this.level, numberTextureCache: this.textureCache, assetService: this.assets });
+      if (this.uiRoot) {
+        this.targetStrip.mount(this.uiRoot);
+      }
 
       if (!this.game) {
         this.game = new MarbleDropGame({
@@ -62,6 +80,8 @@ export class MarbleDropApp {
           visualTextureCache: this.visualTextureCache,
           assetService: this.assets,
           level: this.level,
+          feedbackService: this.feedbackService,
+          soundService: this.soundService,
         });
       }
       await this.game.init();
@@ -105,6 +125,28 @@ export class MarbleDropApp {
 
     if (this.visualTextureCache && typeof this.visualTextureCache.destroy === 'function') {
       this.visualTextureCache.destroy();
+    }
+
+    if (this.targetStrip && typeof this.targetStrip.destroy === 'function') {
+      this.targetStrip.destroy();
+      this.targetStrip = null;
+    }
+
+    if (this.uiRoot && this.renderer && this.renderer.app && this.renderer.app.stage) {
+      try {
+        this.renderer.app.stage.removeChild(this.uiRoot);
+      } catch (e) {}
+      this.uiRoot = null;
+    }
+
+    if (this.soundService && typeof this.soundService.destroy === 'function') {
+      try { this.soundService.destroy(); } catch (e) {}
+      this.soundService = null;
+    }
+
+    if (this.feedbackService && typeof this.feedbackService.destroy === 'function') {
+      try { this.feedbackService.destroy(); } catch (e) {}
+      this.feedbackService = null;
     }
 
     if (this.renderer && typeof this.renderer.destroy === 'function') {
@@ -154,6 +196,27 @@ export class MarbleDropApp {
     if (this.visualTextureCache && typeof this.visualTextureCache.destroy === 'function') {
       this.visualTextureCache.destroy();
     }
+
+    if (this.targetStrip && typeof this.targetStrip.destroy === 'function') {
+      this.targetStrip.destroy();
+      this.targetStrip = null;
+    }
+
+    if (this.uiRoot && this.renderer && this.renderer.app && this.renderer.app.stage) {
+      try { this.renderer.app.stage.removeChild(this.uiRoot); } catch (e) {}
+      this.uiRoot = null;
+    }
+
+    if (this.soundService && typeof this.soundService.destroy === 'function') {
+      try { this.soundService.destroy(); } catch (e) {}
+      this.soundService = null;
+    }
+
+    if (this.feedbackService && typeof this.feedbackService.destroy === 'function') {
+      try { this.feedbackService.destroy(); } catch (e) {}
+      this.feedbackService = null;
+    }
+
     if (this.renderer && typeof this.renderer.destroy === 'function') {
       this.renderer.destroy();
     }

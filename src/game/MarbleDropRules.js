@@ -59,4 +59,42 @@ export class MarbleDropRules {
 
     return Array.from(reachable).sort((a, b) => a - b);
   }
+
+  // Compute required static numeric asset values for a given level.
+  // Required = reachable arithmetic results ∪ startingValue ∪ goal values ∪ gate operands
+  // Include level.targetValue only if present (do not add when missing).
+  static getRequiredNumberAssetValues(level) {
+    MarbleDropRules.validateLevelConfig(level);
+
+    const values = new Set();
+
+    // Starting value
+    if (typeof level.startingValue === 'number') values.add(level.startingValue);
+
+    // Goals
+    for (const g of level.goals) {
+      if (typeof g.value === 'number') values.add(g.value);
+    }
+
+    // Gate operands
+    for (const gate of level.gates) {
+      if (typeof gate.operand === 'number') values.add(gate.operand);
+    }
+
+    // Reachable results
+    try {
+      const reachable = MarbleDropRules.getReachableValues(level);
+      for (const v of reachable) values.add(v);
+    } catch (e) {
+      // If reachable computation fails, rethrow
+      throw e;
+    }
+
+    // targetValue only if present
+    if (Object.prototype.hasOwnProperty.call(level, 'targetValue') && typeof level.targetValue === 'number') {
+      values.add(level.targetValue);
+    }
+
+    return Array.from(values).sort((a, b) => a - b);
+  }
 }

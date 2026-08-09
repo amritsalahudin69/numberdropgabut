@@ -15,7 +15,7 @@ import { BackgroundLayer } from '../rendering/BackgroundLayer.js';
 import { VISUAL_ASSETS } from '../config/visualAssets.js';
 
 export class MarbleDropGame {
-  constructor({ renderer, physics, textureCache, visualTextureCache = null, assetService, level = LEVEL_1, clock = null, feedbackService = null } = {}) {
+  constructor({ renderer, physics, textureCache, visualTextureCache = null, assetService, level = LEVEL_1, clock = null, feedbackService = null, soundService = null } = {}) {
     this.renderer = renderer;
     this.physics = physics;
     this.textureCache = textureCache;
@@ -52,6 +52,8 @@ export class MarbleDropGame {
 
     this.eventQueue = null;
     this.pointerHandler = null;
+
+    this.soundService = soundService || null;
   }
 
   async init() {
@@ -399,8 +401,17 @@ export class MarbleDropGame {
       // Ensure session still in FALLING (events may be from previous batch)
       if (this.session.getState() !== GAMEPLAY_STATE.FALLING) return;
 
-      // Peg: physics only, no gameplay operation
-      if (targetMeta.type === 'peg') return;
+      // Peg: physics only, no gameplay operation — play peg sound optionally
+      if (targetMeta.type === 'peg') {
+        try {
+          if (this.soundService && typeof this.soundService.playPeg === 'function') {
+            this.soundService.playPeg();
+          }
+        } catch (e) {
+          // non-fatal
+        }
+        return;
+      }
 
       if (targetMeta.type === 'gate') {
         // Determine gate id and check consumed set
@@ -433,6 +444,11 @@ export class MarbleDropGame {
         });
 
         if (res && res.ok) {
+          try {
+            if (this.soundService && typeof this.soundService.playGate === 'function') {
+              this.soundService.playGate();
+            }
+          } catch (e) {}
           this._startHold(res);
         } else {
           // If resolution failed due to arithmetic/config invariant, follow existing error behavior
@@ -457,6 +473,11 @@ export class MarbleDropGame {
         });
 
         if (res && res.ok) {
+          try {
+            if (this.soundService && typeof this.soundService.playGoal === 'function') {
+              this.soundService.playGoal();
+            }
+          } catch (e) {}
           this._startHold(res);
         }
       }

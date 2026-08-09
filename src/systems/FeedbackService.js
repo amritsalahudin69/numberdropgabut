@@ -1,8 +1,11 @@
+import { FEEDBACK_LOGICAL_SIZE } from '../config/constants.js';
+
 let feedbackSequence = 0;
 
 export class FeedbackService {
-  constructor(hostElement = null) {
+  constructor(hostElement = null, renderer = null) {
     this.hostElement = hostElement;
+    this.renderer = renderer;
     this.imgEl = null;
     this.visible = false;
     this.currentAsset = null;
@@ -28,8 +31,6 @@ export class FeedbackService {
       pointerEvents: 'none',
       zIndex: '9999',
       transform: 'translate(-50%, -50%)',
-      maxWidth: '200px',
-      maxHeight: '200px',
       objectFit: 'contain',
     });
 
@@ -74,6 +75,15 @@ export class FeedbackService {
 
     const left = typeof screenPosition.clientX === 'number' ? screenPosition.clientX : 0;
     const top = typeof screenPosition.clientY === 'number' ? screenPosition.clientY : 0;
+
+    // Determine display size based on renderer scale or fallback
+    const scale = (this.renderer && typeof this.renderer.worldToClient === 'function')
+      ? ((this.renderer.worldToClient(1,1).scaleX + this.renderer.worldToClient(1,1).scaleY) / 2 || 1)
+      : 1;
+
+    const clientSize = Math.max(16, Math.round(FEEDBACK_LOGICAL_SIZE * scale));
+    this.imgEl.style.width = `${clientSize}px`;
+    this.imgEl.style.height = `${clientSize}px`;
 
     this.imgEl.style.left = `${left}px`;
     this.imgEl.style.top = `${top}px`;

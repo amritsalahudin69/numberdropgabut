@@ -11,3 +11,6 @@ export const ASSET_PATHS = Object.freeze({
   effects: '/assets/effects',
   assetIndex: '/assets/generated/asset-index.json',
 });
+
+// Logical size (in world pixels) used by feedback visuals. Converted to client px by renderer scale.
+export const FEEDBACK_LOGICAL_SIZE = 120;

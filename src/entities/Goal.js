@@ -34,22 +34,31 @@ export class Goal {
     this.container = new Container();
     this.container.position.set(x, y);
 
-    const bucketBg = new Graphics();
-    bucketBg.roundRect(-width / 2, -height / 2, width, height, 12).fill(0x2c3e50);
-    this.container.addChild(bucketBg);
-
+    // Use character visual if texture provided (preloaded from NumberTextureCache)
     if (texture) {
       const sprite = new Sprite(texture);
       sprite.anchor.set(0.5);
-      sprite.width = height * 0.7;
-      sprite.height = height * 0.7;
+      // Scale to fit within logical goal area
+      const maxDim = Math.min(width, height) * 0.8;
+      const spriteAspect = (texture.width || 1) / (texture.height || 1);
+      if (spriteAspect > 1) {
+        sprite.width = maxDim;
+        sprite.height = maxDim / spriteAspect;
+      } else {
+        sprite.height = maxDim;
+        sprite.width = maxDim * spriteAspect;
+      }
       this.container.addChild(sprite);
     } else {
+      // Fallback: simple placeholder visual
+      const bucketBg = new Graphics();
+      bucketBg.roundRect(-width / 2, -height / 2, width, height, 8).fill(0x333333);
+      this.container.addChild(bucketBg);
       const label = new Text({
-        text: `GOAL ${value}`,
+        text: String(value),
         style: {
           fill: '#ffffff',
-          fontSize: 20,
+          fontSize: 24,
           fontWeight: 'bold',
         },
       });

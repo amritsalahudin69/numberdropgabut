@@ -25,11 +25,11 @@ function validateLevelAssets() {
     process.exit(1);
   }
 
-  const reachableValues = MarbleDropRules.getReachableValues(LEVEL_1);
+  const requiredValues = MarbleDropRules.getRequiredNumberAssetValues(LEVEL_1);
 
   const missingPngs = [];
 
-  for (const val of reachableValues) {
+  for (const val of requiredValues) {
     const key = String(val);
     const record = indexData[key];
 
@@ -55,7 +55,8 @@ function validateLevelAssets() {
     process.exit(1);
   }
 
-  console.log(`Reachable Level 1 values count: ${reachableValues.length} (min: ${reachableValues[0]}, max: ${reachableValues[reachableValues.length - 1]})`);
+  const sorted = Array.from(new Set(requiredValues)).map(Number).sort((a,b) => a-b);
+  console.log(`Required Level 1 values count: ${sorted.length} (min: ${sorted[0]}, max: ${sorted[sorted.length - 1]})`);
   console.log('PASS_LEVEL_ASSET_COVERAGE');
   process.exit(0);
 }
