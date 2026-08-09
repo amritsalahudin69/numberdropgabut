@@ -1,11 +1,25 @@
 import assert from 'node:assert/strict';
-import path from 'path';
 import { VisualTextureCache } from '../src/systems/VisualTextureCache.js';
 import { VISUAL_ASSETS } from '../src/config/visualAssets.js';
 
 async function run() {
   console.log('Running visual-assets.test.mjs...');
-  const cache = new VisualTextureCache({ publicDir: path.resolve(process.cwd(), 'public', 'assets') });
+
+  // Fake loader to simulate PIXI Assets in Node tests
+  const fakeTexture = { width: 100, height: 100, _isFakeTexture: true };
+  const fakeLoader = {
+    async load(url) {
+      // simulate async load
+      return Promise.resolve();
+    },
+    get(url) {
+      // return fake texture for known visual asset
+      if (url && typeof url === 'string' && url.includes('marbledrop')) return fakeTexture;
+      return null;
+    },
+  };
+
+  const cache = new VisualTextureCache({ loader: fakeLoader });
   let ok = false;
   try {
     ok = await cache.preload(VISUAL_ASSETS);
@@ -29,7 +43,7 @@ async function run() {
   for (const key of declared) {
     assert.ok(cache.has(key), `cache must have ${key}`);
     const entry = cache.get(key);
-    assert.ok(entry && entry.path, `cache entry for ${key} must contain path`);
+    assert.ok(entry && entry._isFakeTexture, `cache entry for ${key} must be the fake texture`);
   }
 
   cache.destroy();

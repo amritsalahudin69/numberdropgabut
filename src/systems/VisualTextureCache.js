@@ -1,41 +1,38 @@
-import fs from 'fs';
-import path from 'path';
+import { Assets } from 'pixi.js';
 
+// VisualTextureCache is a browser/runtime texture preloader using PIXI Assets.
+// Accepts an injectable loader for tests.
 export class VisualTextureCache {
-  constructor({ publicDir = path.resolve(process.cwd(), 'public', 'assets') } = {}) {
-    this.publicDir = publicDir;
+  constructor({ loader = Assets } = {}) {
+    this.loader = loader;
     this.map = new Map();
     this.loaded = false;
   }
 
+  // catalog: object tree with string paths (e.g. '/assets/marbledrop/background/bg.jpg')
   async preload(catalog) {
     if (!catalog || typeof catalog !== 'object') return false;
     const toLoad = [];
-    const collect = (obj, prefix = '') => {
+    const collect = (obj) => {
       for (const k of Object.keys(obj)) {
         const v = obj[k];
         if (v && typeof v === 'string') toLoad.push(v);
-        else if (v && typeof v === 'object') collect(v, `${prefix}${k}.`);
+        else if (v && typeof v === 'object') collect(v);
       }
     };
     collect(catalog);
 
-    for (const rel of toLoad) {
-      // Ensure path is inside public assets and file exists
+    // Use PIXI Assets loader to load each declared path. Throw on missing.
+    for (const url of toLoad) {
       try {
-        // Normalize declared path: strip leading slash and optional leading 'assets/' so
-        // publicDir (public/assets) + relative path -> public/assets/<...>
-        let relNorm = String(rel).replace(/^\/+/, '');
-        if (relNorm.startsWith('assets/')) relNorm = relNorm.slice('assets/'.length);
-        const filePath = path.join(this.publicDir, relNorm);
-        if (fs.existsSync(filePath)) {
-          this.map.set(rel, { path: filePath });
-        } else {
-          // Missing required visual asset -> fail preload
-          throw new Error(`Missing visual asset: ${rel}`);
-        }
+        // Preserve declared url as key (do not mutate) — Assets.load accepts leading '/'
+        await this.loader.load(url);
+        const tex = this.loader.get(url);
+        if (!tex) throw new Error(`Loader did not return texture for ${url}`);
+        this.map.set(url, tex);
       } catch (e) {
-        throw e;
+        // Do not fallback silently — required visual asset missing/failed load
+        throw new Error(`Missing visual asset or load failure: ${url} — ${e && e.message}`);
       }
     }
 

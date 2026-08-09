@@ -15,7 +15,7 @@
     "test:lifecycle": "node tests/lifecycle-hardening.test.mjs",
     "test:gate-lock": "node tests/gate-lock.test.mjs",
     "assets:visual": "node scripts/validate-visual-assets.mjs",
-    "test:visual": "node tests/visual-assets.test.mjs",
+    "test:visual": "node tests/visual-assets.test.mjs && node tests/visual-wiring.test.mjs",
     "check": "npm run assets:index && npm run assets:validate && npm run assets:level && npm run assets:visual && npm run test:foundation && npm run test:core && npm run test:feedback && npm run test:lifecycle && npm run test:gate-lock && npm run test:visual && npm run build"
   },
   "dependencies": {

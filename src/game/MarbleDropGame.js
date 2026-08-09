@@ -11,11 +11,15 @@ import { Peg } from '../entities/Peg.js';
 import { Gate } from '../entities/Gate.js';
 import { Goal } from '../entities/Goal.js';
 
+import { BackgroundLayer } from '../rendering/BackgroundLayer.js';
+import { VISUAL_ASSETS } from '../config/visualAssets.js';
+
 export class MarbleDropGame {
-  constructor({ renderer, physics, textureCache, assetService, level = LEVEL_1, clock = null, feedbackService = null } = {}) {
+  constructor({ renderer, physics, textureCache, visualTextureCache = null, assetService, level = LEVEL_1, clock = null, feedbackService = null } = {}) {
     this.renderer = renderer;
     this.physics = physics;
     this.textureCache = textureCache;
+    this.visualTextureCache = visualTextureCache;
     this.assetService = assetService;
     this.level = level;
     this.clock = clock || new Clock();
@@ -60,6 +64,22 @@ export class MarbleDropGame {
     if (this.renderer && typeof this.renderer.getStage === 'function') {
       const stage = this.renderer.getStage();
       if (stage) {
+        // Mount background if available (visualTextureCache provided and contains 'background')
+        try {
+          if (this.visualTextureCache && typeof this.visualTextureCache.get === 'function') {
+            const bgKey = VISUAL_ASSETS && VISUAL_ASSETS.background ? VISUAL_ASSETS.background : null;
+            const bgTex = bgKey && this.visualTextureCache ? this.visualTextureCache.get(bgKey) : null;
+            if (bgTex) {
+              this.backgroundLayer = new BackgroundLayer({ stage, texture: bgTex, world: this.level.world });
+              // mount background behind other game content
+              this.backgroundLayer.mount(stage);
+            }
+          }
+        } catch (e) {
+          // Do not crash boot for background mount failures, but surface error
+          console.error('[MarbleDropGame] Background mount failed:', e);
+        }
+
         stage.addChild(this.container);
       }
 

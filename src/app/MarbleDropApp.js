@@ -5,6 +5,8 @@ import { NumberTextureCache } from '../systems/NumberTextureCache.js';
 import { MarbleDropGame } from '../game/MarbleDropGame.js';
 import { MarbleDropRules } from '../game/MarbleDropRules.js';
 import { LEVEL_1 } from '../config/levels/level1.js';
+import { VisualTextureCache } from '../systems/VisualTextureCache.js';
+import { VISUAL_ASSETS } from '../config/visualAssets.js';
 
 export const APP_STATE = Object.freeze({
   CREATED: 'CREATED',
@@ -20,6 +22,8 @@ export class MarbleDropApp {
     this.physics = deps.physics || new PhysicsWorld();
     this.assets = deps.assets || new AssetService();
     this.textureCache = deps.textureCache || new NumberTextureCache();
+    this.visualTextureCache = deps.visualTextureCache || new VisualTextureCache();
+    this._visualTextureCacheProvided = !!deps.visualTextureCache;
     this.level = deps.level || LEVEL_1;
     this.game = deps.game || null;
     this.state = APP_STATE.CREATED;
@@ -47,11 +51,17 @@ export class MarbleDropApp {
       const requiredValues = MarbleDropRules.getReachableValues(this.level);
       await this.textureCache.preload(requiredValues, this.assets);
 
+      // Preload visual assets (must be ready before game init) — only in browser runtime where PIXI Assets is usable
+      if (typeof document !== 'undefined') {
+        await this.visualTextureCache.preload(VISUAL_ASSETS);
+      }
+
       if (!this.game) {
         this.game = new MarbleDropGame({
           renderer: this.renderer,
           physics: this.physics,
           textureCache: this.textureCache,
+          visualTextureCache: this.visualTextureCache,
           assetService: this.assets,
           level: this.level,
         });
