@@ -1,0 +1,602 @@
+{
+  "0": {
+    "png": "/assets/numbers/0.png",
+    "gif": null
+  },
+  "1": {
+    "png": "/assets/numbers/1.png",
+    "gif": "/assets/gif/1.gif"
+  },
+  "2": {
+    "png": "/assets/numbers/2.png",
+    "gif": "/assets/gif/2.gif"
+  },
+  "3": {
+    "png": "/assets/numbers/3.png",
+    "gif": "/assets/gif/3.gif"
+  },
+  "4": {
+    "png": "/assets/numbers/4.png",
+    "gif": "/assets/gif/4.gif"
+  },
+  "5": {
+    "png": "/assets/numbers/5.png",
+    "gif": "/assets/gif/5.gif"
+  },
+  "6": {
+    "png": "/assets/numbers/6.png",
+    "gif": "/assets/gif/6.gif"
+  },
+  "7": {
+    "png": "/assets/numbers/7.png",
+    "gif": "/assets/gif/7.gif"
+  },
+  "8": {
+    "png": "/assets/numbers/8.png",
+    "gif": "/assets/gif/8.gif"
+  },
+  "9": {
+    "png": "/assets/numbers/9.png",
+    "gif": "/assets/gif/9.gif"
+  },
+  "10": {
+    "png": "/assets/numbers/10.png",
+    "gif": "/assets/gif/10.gif"
+  },
+  "11": {
+    "png": "/assets/numbers/11.png",
+    "gif": "/assets/gif/11.gif"
+  },
+  "12": {
+    "png": "/assets/numbers/12.png",
+    "gif": "/assets/gif/12.gif"
+  },
+  "13": {
+    "png": "/assets/numbers/13.png",
+    "gif": "/assets/gif/13.gif"
+  },
+  "14": {
+    "png": "/assets/numbers/14.png",
+    "gif": "/assets/gif/14.gif"
+  },
+  "15": {
+    "png": "/assets/numbers/15.png",
+    "gif": "/assets/gif/15.gif"
+  },
+  "16": {
+    "png": "/assets/numbers/16.png",
+    "gif": "/assets/gif/16.gif"
+  },
+  "17": {
+    "png": "/assets/numbers/17.png",
+    "gif": "/assets/gif/17.gif"
+  },
+  "18": {
+    "png": "/assets/numbers/18.png",
+    "gif": "/assets/gif/18.gif"
+  },
+  "19": {
+    "png": "/assets/numbers/19.png",
+    "gif": "/assets/gif/19.gif"
+  },
+  "20": {
+    "png": "/assets/numbers/20.png",
+    "gif": "/assets/gif/20.gif"
+  },
+  "21": {
+    "png": "/assets/numbers/21.png",
+    "gif": "/assets/gif/21.gif"
+  },
+  "22": {
+    "png": "/assets/numbers/22.png",
+    "gif": "/assets/gif/22.gif"
+  },
+  "23": {
+    "png": "/assets/numbers/23.png",
+    "gif": "/assets/gif/23.gif"
+  },
+  "24": {
+    "png": "/assets/numbers/24.png",
+    "gif": "/assets/gif/24.gif"
+  },
+  "25": {
+    "png": "/assets/numbers/25.png",
+    "gif": "/assets/gif/25.gif"
+  },
+  "26": {
+    "png": "/assets/numbers/26.png",
+    "gif": "/assets/gif/26.gif"
+  },
+  "27": {
+    "png": "/assets/numbers/27.png",
+    "gif": "/assets/gif/27.gif"
+  },
+  "28": {
+    "png": "/assets/numbers/28.png",
+    "gif": "/assets/gif/28.gif"
+  },
+  "29": {
+    "png": "/assets/numbers/29.png",
+    "gif": "/assets/gif/29.gif"
+  },
+  "30": {
+    "png": "/assets/numbers/30.png",
+    "gif": "/assets/gif/30.gif"
+  },
+  "31": {
+    "png": "/assets/numbers/31.png",
+    "gif": "/assets/gif/31.gif"
+  },
+  "32": {
+    "png": "/assets/numbers/32.png",
+    "gif": "/assets/gif/32.gif"
+  },
+  "33": {
+    "png": "/assets/numbers/33.png",
+    "gif": "/assets/gif/33.gif"
+  },
+  "34": {
+    "png": "/assets/numbers/34.png",
+    "gif": "/assets/gif/34.gif"
+  },
+  "35": {
+    "png": "/assets/numbers/35.png",
+    "gif": "/assets/gif/35.gif"
+  },
+  "36": {
+    "png": "/assets/numbers/36.png",
+    "gif": "/assets/gif/36.gif"
+  },
+  "37": {
+    "png": "/assets/numbers/37.png",
+    "gif": "/assets/gif/37.gif"
+  },
+  "38": {
+    "png": "/assets/numbers/38.png",
+    "gif": "/assets/gif/38.gif"
+  },
+  "39": {
+    "png": "/assets/numbers/39.png",
+    "gif": "/assets/gif/39.gif"
+  },
+  "40": {
+    "png": "/assets/numbers/40.png",
+    "gif": "/assets/gif/40.gif"
+  },
+  "41": {
+    "png": "/assets/numbers/41.png",
+    "gif": "/assets/gif/41.gif"
+  },
+  "42": {
+    "png": "/assets/numbers/42.png",
+    "gif": "/assets/gif/42.gif"
+  },
+  "43": {
+    "png": "/assets/numbers/43.png",
+    "gif": "/assets/gif/43.gif"
+  },
+  "44": {
+    "png": "/assets/numbers/44.png",
+    "gif": "/assets/gif/44.gif"
+  },
+  "45": {
+    "png": "/assets/numbers/45.png",
+    "gif": "/assets/gif/45.gif"
+  },
+  "46": {
+    "png": "/assets/numbers/46.png",
+    "gif": "/assets/gif/46.gif"
+  },
+  "47": {
+    "png": "/assets/numbers/47.png",
+    "gif": "/assets/gif/47.gif"
+  },
+  "48": {
+    "png": "/assets/numbers/48.png",
+    "gif": "/assets/gif/48.gif"
+  },
+  "49": {
+    "png": "/assets/numbers/49.png",
+    "gif": "/assets/gif/49.gif"
+  },
+  "50": {
+    "png": "/assets/numbers/50.png",
+    "gif": "/assets/gif/50.gif"
+  },
+  "51": {
+    "png": "/assets/numbers/51.png",
+    "gif": "/assets/gif/51.gif"
+  },
+  "52": {
+    "png": "/assets/numbers/52.png",
+    "gif": "/assets/gif/52.gif"
+  },
+  "53": {
+    "png": "/assets/numbers/53.png",
+    "gif": "/assets/gif/53.gif"
+  },
+  "54": {
+    "png": "/assets/numbers/54.png",
+    "gif": "/assets/gif/54.gif"
+  },
+  "55": {
+    "png": "/assets/numbers/55.png",
+    "gif": "/assets/gif/55.gif"
+  },
+  "56": {
+    "png": "/assets/numbers/56.png",
+    "gif": "/assets/gif/56.gif"
+  },
+  "57": {
+    "png": "/assets/numbers/57.png",
+    "gif": "/assets/gif/57.gif"
+  },
+  "58": {
+    "png": "/assets/numbers/58.png",
+    "gif": "/assets/gif/58.gif"
+  },
+  "59": {
+    "png": "/assets/numbers/59.png",
+    "gif": "/assets/gif/59.gif"
+  },
+  "60": {
+    "png": "/assets/numbers/60.png",
+    "gif": "/assets/gif/60.gif"
+  },
+  "61": {
+    "png": "/assets/numbers/61.png",
+    "gif": "/assets/gif/61.gif"
+  },
+  "62": {
+    "png": "/assets/numbers/62.png",
+    "gif": "/assets/gif/62.gif"
+  },
+  "63": {
+    "png": "/assets/numbers/63.png",
+    "gif": "/assets/gif/63.gif"
+  },
+  "64": {
+    "png": "/assets/numbers/64.png",
+    "gif": "/assets/gif/64.gif"
+  },
+  "65": {
+    "png": "/assets/numbers/65.png",
+    "gif": "/assets/gif/65.gif"
+  },
+  "66": {
+    "png": "/assets/numbers/66.png",
+    "gif": "/assets/gif/66.gif"
+  },
+  "67": {
+    "png": "/assets/numbers/67.png",
+    "gif": "/assets/gif/67.gif"
+  },
+  "68": {
+    "png": "/assets/numbers/68.png",
+    "gif": "/assets/gif/68.gif"
+  },
+  "69": {
+    "png": "/assets/numbers/69.png",
+    "gif": "/assets/gif/69.gif"
+  },
+  "70": {
+    "png": "/assets/numbers/70.png",
+    "gif": "/assets/gif/70.gif"
+  },
+  "71": {
+    "png": "/assets/numbers/71.png",
+    "gif": "/assets/gif/71.gif"
+  },
+  "72": {
+    "png": "/assets/numbers/72.png",
+    "gif": "/assets/gif/72.gif"
+  },
+  "73": {
+    "png": "/assets/numbers/73.png",
+    "gif": "/assets/gif/73.gif"
+  },
+  "74": {
+    "png": "/assets/numbers/74.png",
+    "gif": "/assets/gif/74.gif"
+  },
+  "75": {
+    "png": "/assets/numbers/75.png",
+    "gif": "/assets/gif/75.gif"
+  },
+  "76": {
+    "png": "/assets/numbers/76.png",
+    "gif": "/assets/gif/76.gif"
+  },
+  "77": {
+    "png": "/assets/numbers/77.png",
+    "gif": "/assets/gif/77.gif"
+  },
+  "78": {
+    "png": "/assets/numbers/78.png",
+    "gif": "/assets/gif/78.gif"
+  },
+  "79": {
+    "png": "/assets/numbers/79.png",
+    "gif": "/assets/gif/79.gif"
+  },
+  "80": {
+    "png": "/assets/numbers/80.png",
+    "gif": "/assets/gif/80.gif"
+  },
+  "81": {
+    "png": "/assets/numbers/81.png",
+    "gif": "/assets/gif/81.gif"
+  },
+  "82": {
+    "png": "/assets/numbers/82.png",
+    "gif": "/assets/gif/82.gif"
+  },
+  "83": {
+    "png": "/assets/numbers/83.png",
+    "gif": "/assets/gif/83.gif"
+  },
+  "84": {
+    "png": "/assets/numbers/84.png",
+    "gif": "/assets/gif/84.gif"
+  },
+  "85": {
+    "png": "/assets/numbers/85.png",
+    "gif": "/assets/gif/85.gif"
+  },
+  "86": {
+    "png": "/assets/numbers/86.png",
+    "gif": "/assets/gif/86.gif"
+  },
+  "87": {
+    "png": "/assets/numbers/87.png",
+    "gif": "/assets/gif/87.gif"
+  },
+  "88": {
+    "png": "/assets/numbers/88.png",
+    "gif": "/assets/gif/88.gif"
+  },
+  "89": {
+    "png": "/assets/numbers/89.png",
+    "gif": "/assets/gif/89.gif"
+  },
+  "90": {
+    "png": "/assets/numbers/90.png",
+    "gif": "/assets/gif/90.gif"
+  },
+  "91": {
+    "png": "/assets/numbers/91.png",
+    "gif": "/assets/gif/91.gif"
+  },
+  "92": {
+    "png": "/assets/numbers/92.png",
+    "gif": "/assets/gif/92.gif"
+  },
+  "93": {
+    "png": "/assets/numbers/93.png",
+    "gif": "/assets/gif/93.gif"
+  },
+  "94": {
+    "png": "/assets/numbers/94.png",
+    "gif": "/assets/gif/94.gif"
+  },
+  "95": {
+    "png": "/assets/numbers/95.png",
+    "gif": "/assets/gif/95.gif"
+  },
+  "96": {
+    "png": "/assets/numbers/96.png",
+    "gif": "/assets/gif/96.gif"
+  },
+  "97": {
+    "png": "/assets/numbers/97.png",
+    "gif": "/assets/gif/97.gif"
+  },
+  "98": {
+    "png": "/assets/numbers/98.png",
+    "gif": "/assets/gif/98.gif"
+  },
+  "99": {
+    "png": "/assets/numbers/99.png",
+    "gif": "/assets/gif/99.gif"
+  },
+  "100": {
+    "png": "/assets/numbers/100.png",
+    "gif": "/assets/gif/100.gif"
+  },
+  "112": {
+    "png": "/assets/numbers/112.png",
+    "gif": null
+  },
+  "148": {
+    "png": "/assets/numbers/148.png",
+    "gif": null
+  },
+  "192": {
+    "png": "/assets/numbers/192.png",
+    "gif": null
+  },
+  "199": {
+    "png": "/assets/numbers/199.png",
+    "gif": null
+  },
+  "203": {
+    "png": "/assets/numbers/203.png",
+    "gif": null
+  },
+  "210": {
+    "png": "/assets/numbers/210.png",
+    "gif": null
+  },
+  "292": {
+    "png": "/assets/numbers/292.png",
+    "gif": null
+  },
+  "293": {
+    "png": "/assets/numbers/293.png",
+    "gif": null
+  },
+  "294": {
+    "png": "/assets/numbers/294.png",
+    "gif": null
+  },
+  "295": {
+    "png": "/assets/numbers/295.png",
+    "gif": null
+  },
+  "296": {
+    "png": "/assets/numbers/296.png",
+    "gif": null
+  },
+  "297": {
+    "png": "/assets/numbers/297.png",
+    "gif": null
+  },
+  "298": {
+    "png": "/assets/numbers/298.png",
+    "gif": null
+  },
+  "299": {
+    "png": "/assets/numbers/299.png",
+    "gif": null
+  },
+  "300": {
+    "png": "/assets/numbers/300.png",
+    "gif": null
+  },
+  "348": {
+    "png": "/assets/numbers/348.png",
+    "gif": null
+  },
+  "398": {
+    "png": "/assets/numbers/398.png",
+    "gif": null
+  },
+  "401": {
+    "png": "/assets/numbers/401.png",
+    "gif": "/assets/gif/401.gif"
+  },
+  "402": {
+    "png": "/assets/numbers/402.png",
+    "gif": "/assets/gif/402.gif"
+  },
+  "403": {
+    "png": "/assets/numbers/403.png",
+    "gif": "/assets/gif/403.gif"
+  },
+  "404": {
+    "png": "/assets/numbers/404.png",
+    "gif": "/assets/gif/404.gif"
+  },
+  "405": {
+    "png": "/assets/numbers/405.png",
+    "gif": "/assets/gif/405.gif"
+  },
+  "406": {
+    "png": "/assets/numbers/406.png",
+    "gif": "/assets/gif/406.gif"
+  },
+  "407": {
+    "png": "/assets/numbers/407.png",
+    "gif": "/assets/gif/407.gif"
+  },
+  "408": {
+    "png": "/assets/numbers/408.png",
+    "gif": "/assets/gif/408.gif"
+  },
+  "409": {
+    "png": "/assets/numbers/409.png",
+    "gif": "/assets/gif/409.gif"
+  },
+  "410": {
+    "png": "/assets/numbers/410.png",
+    "gif": "/assets/gif/410.gif"
+  },
+  "411": {
+    "png": "/assets/numbers/411.png",
+    "gif": "/assets/gif/411.gif"
+  },
+  "493": {
+    "png": "/assets/numbers/493.png",
+    "gif": null
+  },
+  "910": {
+    "png": "/assets/numbers/910.png",
+    "gif": null
+  },
+  "920": {
+    "png": "/assets/numbers/920.png",
+    "gif": null
+  },
+  "930": {
+    "png": "/assets/numbers/930.png",
+    "gif": null
+  },
+  "940": {
+    "png": "/assets/numbers/940.png",
+    "gif": null
+  },
+  "950": {
+    "png": "/assets/numbers/950.png",
+    "gif": null
+  },
+  "960": {
+    "png": "/assets/numbers/960.png",
+    "gif": null
+  },
+  "970": {
+    "png": "/assets/numbers/970.png",
+    "gif": null
+  },
+  "980": {
+    "png": "/assets/numbers/980.png",
+    "gif": null
+  },
+  "990": {
+    "png": "/assets/numbers/990.png",
+    "gif": null
+  },
+  "1000": {
+    "png": "/assets/numbers/1000.png",
+    "gif": null
+  },
+  "1910": {
+    "png": "/assets/numbers/1910.png",
+    "gif": null
+  },
+  "1920": {
+    "png": "/assets/numbers/1920.png",
+    "gif": null
+  },
+  "1930": {
+    "png": "/assets/numbers/1930.png",
+    "gif": null
+  },
+  "1940": {
+    "png": "/assets/numbers/1940.png",
+    "gif": null
+  },
+  "1950": {
+    "png": "/assets/numbers/1950.png",
+    "gif": null
+  },
+  "1960": {
+    "png": "/assets/numbers/1960.png",
+    "gif": null
+  },
+  "1970": {
+    "png": "/assets/numbers/1970.png",
+    "gif": null
+  },
+  "1980": {
+    "png": "/assets/numbers/1980.png",
+    "gif": null
+  },
+  "1990": {
+    "png": "/assets/numbers/1990.png",
+    "gif": null
+  },
+  "2000": {
+    "png": "/assets/numbers/2000.png",
+    "gif": null
+  }
+}

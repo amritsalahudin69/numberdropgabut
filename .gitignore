@@ -1,0 +1,4 @@
+/node_modules
+/public/assets/backgrounds/*.png
+/public/assets/numbers/*.png
+/public/assets/gif/*.gif
