@@ -13,11 +13,13 @@ async function runGateLockTests() {
   const fakeClock = new FakeClock(0);
 
   const fakeTextureCache = { get(v){ return { id: `tex-${v}` }; }, has(){ return true; } };
+  const fakeVisualTextureCache = { get(key){ return { _isFakeTexture: true, width: 800, height: 600 }; }, has(){ return true; }, destroy(){} };
   const fakeAssets = { getFeedbackAsset(){ return { type: 'png', url: '/assets/numbers/99.png' }; }, getStaticUrl(v){ return `/assets/numbers/${v}.png`; } };
   const fakeFeedback = { show(){}, updatePosition(){}, clear(){}, isVisible(){ return false; }, destroy(){} };
-  const fakeRenderer = { getStage(){ return { addChild(){} }; }, getCanvas(){ return null; }, worldToClient(){ return { clientX:100, clientY:100 }; } };
+  const fakeStage = { children: [], addChild(c){ this.children.push(c); c.parent = this; }, addChildAt(c, i){ this.children.splice(i, 0, c); c.parent = this; }, removeChild(c){ const idx = this.children.indexOf(c); if (idx >= 0) this.children.splice(idx, 1); } };
+  const fakeRenderer = { getStage(){ return fakeStage; }, getCanvas(){ return null; }, worldToClient(){ return { clientX:100, clientY:100 }; } };
 
-  const game = new MarbleDropGame({ renderer: fakeRenderer, physics: null, textureCache: fakeTextureCache, assetService: fakeAssets, level: LEVEL_1, clock: fakeClock, feedbackService: fakeFeedback });
+  const game = new MarbleDropGame({ renderer: fakeRenderer, physics: null, textureCache: fakeTextureCache, visualTextureCache: fakeVisualTextureCache, assetService: fakeAssets, level: LEVEL_1, clock: fakeClock, feedbackService: fakeFeedback });
   await game.init();
   game.start();
 

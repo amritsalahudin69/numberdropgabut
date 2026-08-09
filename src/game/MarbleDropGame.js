@@ -48,6 +48,7 @@ export class MarbleDropGame {
     this.gates = [];
     this.goals = [];
     this.activeGacoan = null;
+    this.backgroundLayer = null;
 
     this.eventQueue = null;
     this.pointerHandler = null;
@@ -63,34 +64,37 @@ export class MarbleDropGame {
 
     if (this.renderer && typeof this.renderer.getStage === 'function') {
       const stage = this.renderer.getStage();
+      
+      // Check if background is required
+      const bgKey = VISUAL_ASSETS && VISUAL_ASSETS.background ? VISUAL_ASSETS.background : null;
+      if (bgKey && !stage) {
+        throw new Error(`Required background cannot be mounted: renderer stage unavailable`);
+      }
+      
       if (stage) {
-        // Mount background if available (visualTextureCache provided and contains 'background')
-        try {
-          if (this.visualTextureCache && typeof this.visualTextureCache.get === 'function') {
-            const bgKey = VISUAL_ASSETS && VISUAL_ASSETS.background ? VISUAL_ASSETS.background : null;
-            if (bgKey) {
-              if (!this.visualTextureCache || typeof this.visualTextureCache.get !== 'function') {
-                throw new Error('VisualTextureCache not available during boot but VISUAL_ASSETS.background is declared');
-              }
-
-              const bgTex = this.visualTextureCache.get(bgKey);
-              if (!bgTex) {
-                throw new Error(`Required MarbleDrop background texture was not preloaded: ${bgKey}`);
-              }
-
-              this.backgroundLayer = new BackgroundLayer({ stage, texture: bgTex, world: this.level.world });
-              this.backgroundLayer.mount(stage);
-
-              if (!this.backgroundLayer || !this.backgroundLayer.sprite) {
-                throw new Error('MarbleDrop background failed to mount');
-              }
-            }
+        // Mount required background if declared (strict, no catch)
+        if (bgKey) {
+          // Background is declared as required
+          if (!this.visualTextureCache || typeof this.visualTextureCache.get !== 'function') {
+            throw new Error('VisualTextureCache not available but VISUAL_ASSETS.background is declared (required)');
           }
-        } catch (e) {
-          // Do not crash boot for background mount failures, but surface error
-          console.error('[MarbleDropGame] Background mount failed:', e);
+
+          const bgTex = this.visualTextureCache.get(bgKey);
+          if (!bgTex) {
+            throw new Error(`Required MarbleDrop background texture was not preloaded: ${bgKey}`);
+          }
+
+          // Create and mount background (may throw; error propagates to app.init)
+          this.backgroundLayer = new BackgroundLayer({ stage, texture: bgTex, world: this.level.world });
+          this.backgroundLayer.mount(stage);
+
+          // Verify mount succeeded
+          if (!this.backgroundLayer || !this.backgroundLayer.sprite) {
+            throw new Error('MarbleDrop background failed to mount: sprite is null after mount');
+          }
         }
 
+        // Add game container above background (index > 0 if background exists)
         stage.addChild(this.container);
       }
 

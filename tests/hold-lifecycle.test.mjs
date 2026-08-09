@@ -42,6 +42,13 @@ async function runHoldLifecycleTests() {
     destroy() {},
   };
 
+  // --- fake visual texture cache ---
+  const fakeVisualTextureCache = {
+    get(key) { return { _isFakeTexture: true, width: 800, height: 600 }; },
+    has() { return true; },
+    destroy() {},
+  };
+
   // --- fake asset service (getFeedbackAsset) ---
   const fakeAssets = {
     getFeedbackAsset(val) {
@@ -67,8 +74,9 @@ async function runHoldLifecycleTests() {
   };
 
   // --- fake renderer ---
+  const fakeStage = { children: [], addChild(c){ this.children.push(c); c.parent = this; }, addChildAt(c, i){ this.children.splice(i, 0, c); c.parent = this; }, removeChild(c){ const idx = this.children.indexOf(c); if (idx >= 0) this.children.splice(idx, 1); } };
   const fakeRenderer = {
-    getStage() { return { addChild() {} }; },
+    getStage() { return fakeStage; },
     getCanvas() { return null; },
     worldToClient() { return { clientX: 100, clientY: 200 }; },
   };
@@ -77,6 +85,7 @@ async function runHoldLifecycleTests() {
     renderer: fakeRenderer,
     physics: null,
     textureCache: fakeTextureCache,
+    visualTextureCache: fakeVisualTextureCache,
     assetService: fakeAssets,
     level: LEVEL_1,
     clock: fakeClock,
@@ -174,6 +183,7 @@ async function runHoldLifecycleTests() {
     renderer: fakeRenderer,
     physics: null,
     textureCache: fakeTextureCache,
+    visualTextureCache: fakeVisualTextureCache,
     assetService: fakeAssets,
     level: LEVEL_1,
     clock: fakeClock2,

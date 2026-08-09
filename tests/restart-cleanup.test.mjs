@@ -13,11 +13,19 @@ async function runRestartCleanupTests() {
     has(val) {
       return true;
     },
+    destroy() {},
   };
 
+  const fakeVisualTextureCache = {
+    get(key) { return { _isFakeTexture: true, width: 800, height: 600 }; },
+    has() { return true; },
+    destroy() {},
+  };
+
+  const fakeStage = { children: [], addChild(c){ this.children.push(c); c.parent = this; }, addChildAt(c, i){ this.children.splice(i, 0, c); c.parent = this; }, removeChild(c){ const idx = this.children.indexOf(c); if (idx >= 0) this.children.splice(idx, 1); } };
   const fakeRenderer = {
     getStage() {
-      return { addChild() {}, removeChild() {} };
+      return fakeStage;
     },
     getCanvas() {
       return null;
@@ -28,6 +36,7 @@ async function runRestartCleanupTests() {
     renderer: fakeRenderer,
     physics: null,
     textureCache: fakeTextureCache,
+    visualTextureCache: fakeVisualTextureCache,
     level: LEVEL_1,
   });
 

@@ -55,6 +55,13 @@ async function runBootContractTests() {
     destroy() {},
   };
 
+  const fakeVisualTextureCache = {
+    async preload() {},
+    get(key) { return { _isFakeTexture: true }; },
+    has() { return true; },
+    destroy() {},
+  };
+
   const fakeGame = {
     async init() {},
     start() {},
@@ -67,6 +74,7 @@ async function runBootContractTests() {
     physics: fakePhysics,
     assets: fakeAssets,
     textureCache: fakeTextureCache,
+    visualTextureCache: fakeVisualTextureCache,
     game: fakeGame,
   });
 
@@ -123,6 +131,7 @@ async function runBootContractTests() {
     physics: failPhysics,
     assets: failAssets,
     textureCache: fakeTextureCache,
+    visualTextureCache: fakeVisualTextureCache,
     game: fakeGame,
   });
 

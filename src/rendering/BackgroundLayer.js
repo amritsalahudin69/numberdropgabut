@@ -9,18 +9,17 @@ export class BackgroundLayer {
   }
 
   mount(parentContainer) {
-    if (!parentContainer) return;
-    if (!this.texture) return;
+    if (!parentContainer) throw new Error('BackgroundLayer.mount requires a valid parentContainer');
+    if (!this.texture) throw new Error('BackgroundLayer.mount requires a texture');
 
-    // Support test seam fake textures (marked with _isFakeTexture) to avoid needing full PIXI renderer in Node tests
-    if (this.texture && this.texture._isFakeTexture) {
+    // Support test seam fake textures
+    if (this.texture._isFakeTexture) {
       const texW = this.texture.width || this.world.width;
       const texH = this.texture.height || this.world.height;
       const sx = this.world.width / texW;
       const sy = this.world.height / texH;
       const sc = Math.max(sx, sy);
 
-      // lightweight fake sprite object for tests
       const sprite = {
         _isFakeSprite: true,
         anchor: { x: 0.5, y: 0.5, set(x, y) { this.x = x; this.y = y; } },
@@ -30,22 +29,46 @@ export class BackgroundLayer {
         destroy() { /* nothing */ },
       };
       this.sprite = sprite;
-      if (typeof parentContainer.addChildAt === 'function') parentContainer.addChildAt(this.sprite, 0);
-      else if (typeof parentContainer.addChild === 'function') parentContainer.addChild(this.sprite);
+      if (typeof parentContainer.addChildAt !== 'function') {
+        throw new Error('BackgroundLayer.mount: parentContainer must support addChildAt method');
+      }
+      try {
+        parentContainer.addChildAt(this.sprite, 0);
+      } catch (e) {
+        this.sprite = null;
+        throw new Error(`BackgroundLayer.mount: failed to add sprite to parent: ${e.message}`);
+      }
       return;
     }
 
-    this.sprite = new Sprite(this.texture);
-    this.sprite.anchor.set(0.5);
-    // Cover scale similar to legacy: scale uniformly to cover 1920x1080
+    // Create real PIXI sprite
+    let sprite;
+    try {
+      sprite = new Sprite(this.texture);
+    } catch (e) {
+      throw new Error(`BackgroundLayer.mount: failed to create Sprite: ${e.message}`);
+    }
+
+    sprite.anchor.set(0.5);
     const texW = this.texture?.width || this.world.width;
     const texH = this.texture?.height || this.world.height;
     const sx = this.world.width / texW;
     const sy = this.world.height / texH;
     const sc = Math.max(sx, sy);
-    this.sprite.scale.set(sc);
-    this.sprite.position.set(this.world.width / 2, this.world.height / 2);
-    parentContainer.addChildAt(this.sprite, 0);
+    sprite.scale.set(sc);
+    sprite.position.set(this.world.width / 2, this.world.height / 2);
+
+    if (typeof parentContainer.addChildAt !== 'function') {
+      throw new Error('BackgroundLayer.mount: parentContainer must support addChildAt method');
+    }
+
+    try {
+      parentContainer.addChildAt(sprite, 0);
+      this.sprite = sprite;
+    } catch (e) {
+      // Sprite was created but mount failed; clean without destroying shared texture
+      throw new Error(`BackgroundLayer.mount: failed to add sprite to parent: ${e.message}`);
+    }
   }
 
   destroy() {

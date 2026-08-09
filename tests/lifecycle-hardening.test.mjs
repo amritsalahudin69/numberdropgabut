@@ -15,6 +15,12 @@ async function runLifecycleHardening() {
     destroy() {},
   };
 
+  const fakeVisualTextureCache = {
+    get(key) { return { _isFakeTexture: true, width: 800, height: 600 }; },
+    has() { return true; },
+    destroy() {},
+  };
+
   const fakeAssets = {
     getFeedbackAsset() { return { type: 'png', url: '/assets/numbers/99.png' }; },
     getStaticUrl(val) { return `/assets/numbers/${val}.png`; },
@@ -24,8 +30,9 @@ async function runLifecycleHardening() {
     show() {}, updatePosition() {}, clear() {}, isVisible() { return false; }, getCurrentAsset() { return null; }, destroy() {},
   };
 
+  const fakeStage = { children: [], addChild(c){ this.children.push(c); c.parent = this; }, addChildAt(c, i){ this.children.splice(i, 0, c); c.parent = this; }, removeChild(c){ const idx = this.children.indexOf(c); if (idx >= 0) this.children.splice(idx, 1); } };
   const fakeRenderer = {
-    getStage() { return { addChild() {}, removeChild() {} }; },
+    getStage() { return fakeStage; },
     getCanvas() { return null; },
     worldToClient() { return { clientX: 100, clientY: 100 }; },
   };
@@ -34,6 +41,7 @@ async function runLifecycleHardening() {
     renderer: fakeRenderer,
     physics: null,
     textureCache: fakeTextureCache,
+    visualTextureCache: fakeVisualTextureCache,
     assetService: fakeAssets,
     level: LEVEL_1,
     clock: fakeClock,

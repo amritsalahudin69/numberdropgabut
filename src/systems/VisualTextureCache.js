@@ -10,8 +10,12 @@ export class VisualTextureCache {
   }
 
   // catalog: object tree with string paths (e.g. '/assets/marbledrop/background/bg.jpg')
+  // Transactional: all assets must succeed or all are discarded. loaded remains false on any failure.
   async preload(catalog) {
-    if (!catalog || typeof catalog !== 'object') return false;
+    if (!catalog || typeof catalog !== 'object') {
+      throw new Error('VisualTextureCache.preload requires an object catalog');
+    }
+
     const toLoad = [];
     const collect = (obj) => {
       for (const k of Object.keys(obj)) {
@@ -22,20 +26,30 @@ export class VisualTextureCache {
     };
     collect(catalog);
 
-    // Use PIXI Assets loader to load each declared path. Throw on missing.
+    // Start transaction: clear any stale entries from prior preload attempt
+    this.map.clear();
+    this.loaded = false;
+
+    const tempMap = new Map();
+
+    // Use PIXI Assets loader to load each declared path. Throw on first failure (transactional).
     for (const url of toLoad) {
       try {
         // Preserve declared url as key (do not mutate) — Assets.load accepts leading '/'
         await this.loader.load(url);
         const tex = this.loader.get(url);
         if (!tex) throw new Error(`Loader did not return texture for ${url}`);
-        this.map.set(url, tex);
+        tempMap.set(url, tex);
       } catch (e) {
-        // Do not fallback silently — required visual asset missing/failed load
-        throw new Error(`Missing visual asset or load failure: ${url} — ${e && e.message}`);
+        // On ANY failure, do not commit the partial transaction
+        this.map.clear();
+        this.loaded = false;
+        throw new Error(`Visual asset preload failed (transactional rollback): ${url} — ${e && e.message}`);
       }
     }
 
+    // All assets succeeded: commit transaction
+    this.map = tempMap;
     this.loaded = true;
     return true;
   }

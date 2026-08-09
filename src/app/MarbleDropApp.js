@@ -51,10 +51,8 @@ export class MarbleDropApp {
       const requiredValues = MarbleDropRules.getReachableValues(this.level);
       await this.textureCache.preload(requiredValues, this.assets);
 
-      // Preload visual assets (must be ready before game init) — only in browser runtime where PIXI Assets is usable
-      if (typeof document !== 'undefined') {
-        await this.visualTextureCache.preload(VISUAL_ASSETS);
-      }
+      // Preload visual assets (must be ready before game init) — always required, not conditional
+      await this.visualTextureCache.preload(VISUAL_ASSETS);
 
       if (!this.game) {
         this.game = new MarbleDropGame({
@@ -82,7 +80,43 @@ export class MarbleDropApp {
       this.state = APP_STATE.READY;
     } catch (err) {
       this.state = APP_STATE.FAILED;
+      this._cleanupAfterFailedInit();
       throw err;
+    }
+  }
+
+  _cleanupAfterFailedInit() {
+    // Rollback all initialized resources without entering DESTROYED state
+    // (FAILED is the final state for init failures)
+    
+    if (this.renderer && this.renderer.app && this.renderer.app.ticker && this.tickerCallback) {
+      this.renderer.app.ticker.remove(this.tickerCallback);
+      this.tickerCallback = null;
+    }
+
+    if (this.game && typeof this.game.destroy === 'function') {
+      this.game.destroy();
+      this.game = null;
+    }
+
+    if (this.textureCache && typeof this.textureCache.destroy === 'function') {
+      this.textureCache.destroy();
+    }
+
+    if (this.visualTextureCache && typeof this.visualTextureCache.destroy === 'function') {
+      this.visualTextureCache.destroy();
+    }
+
+    if (this.renderer && typeof this.renderer.destroy === 'function') {
+      this.renderer.destroy();
+    }
+
+    if (this.physics && typeof this.physics.destroy === 'function') {
+      this.physics.destroy();
+    }
+
+    if (this.assets && typeof this.assets.destroy === 'function') {
+      this.assets.destroy();
     }
   }
 
@@ -116,10 +150,6 @@ export class MarbleDropApp {
     }
     if (this.textureCache && typeof this.textureCache.destroy === 'function') {
       this.textureCache.destroy();
-    }
-    if (this.game && typeof this.game.destroy === 'function') {
-      this.game.destroy();
-      this.game = null;
     }
     if (this.visualTextureCache && typeof this.visualTextureCache.destroy === 'function') {
       this.visualTextureCache.destroy();
