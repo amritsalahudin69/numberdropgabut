@@ -117,6 +117,13 @@ export class MarbleDropApp {
     if (this.textureCache && typeof this.textureCache.destroy === 'function') {
       this.textureCache.destroy();
     }
+    if (this.game && typeof this.game.destroy === 'function') {
+      this.game.destroy();
+      this.game = null;
+    }
+    if (this.visualTextureCache && typeof this.visualTextureCache.destroy === 'function') {
+      this.visualTextureCache.destroy();
+    }
     if (this.renderer && typeof this.renderer.destroy === 'function') {
       this.renderer.destroy();
     }

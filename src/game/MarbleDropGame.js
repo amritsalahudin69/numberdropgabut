@@ -68,11 +68,22 @@ export class MarbleDropGame {
         try {
           if (this.visualTextureCache && typeof this.visualTextureCache.get === 'function') {
             const bgKey = VISUAL_ASSETS && VISUAL_ASSETS.background ? VISUAL_ASSETS.background : null;
-            const bgTex = bgKey && this.visualTextureCache ? this.visualTextureCache.get(bgKey) : null;
-            if (bgTex) {
+            if (bgKey) {
+              if (!this.visualTextureCache || typeof this.visualTextureCache.get !== 'function') {
+                throw new Error('VisualTextureCache not available during boot but VISUAL_ASSETS.background is declared');
+              }
+
+              const bgTex = this.visualTextureCache.get(bgKey);
+              if (!bgTex) {
+                throw new Error(`Required MarbleDrop background texture was not preloaded: ${bgKey}`);
+              }
+
               this.backgroundLayer = new BackgroundLayer({ stage, texture: bgTex, world: this.level.world });
-              // mount background behind other game content
               this.backgroundLayer.mount(stage);
+
+              if (!this.backgroundLayer || !this.backgroundLayer.sprite) {
+                throw new Error('MarbleDrop background failed to mount');
+              }
             }
           }
         } catch (e) {
@@ -547,7 +558,7 @@ export class MarbleDropGame {
   destroy() {
     if (this.feedback) {
       this.feedback.clear();
-      this.feedback.destroy();
+      if (typeof this.feedback.destroy === 'function') this.feedback.destroy();
       this.feedback = null;
     }
 
@@ -566,9 +577,16 @@ export class MarbleDropGame {
       } catch {}
       this.eventQueue = null;
     }
+
+    // Destroy background layer if present
+    if (this.backgroundLayer && typeof this.backgroundLayer.destroy === 'function') {
+      this.backgroundLayer.destroy();
+      this.backgroundLayer = null;
+    }
+
     if (this.container && this.container.parent) {
       this.container.parent.removeChild(this.container);
-      this.container.destroy({ children: true });
+      if (typeof this.container.destroy === 'function') this.container.destroy({ children: true });
     }
   }
 }
