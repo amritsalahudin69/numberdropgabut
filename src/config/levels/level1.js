@@ -5,11 +5,11 @@ export const LEVEL_1 = Object.freeze({
     width: 1920,
     height: 1080,
   },
-  startingValue: 100,
+  startingValue: 70,
   maxOps: 6,
   valueDomain: {
     min: 0,
-    max: 2000,
+    max: 100,
   },
   dropZone: {
     minX: 360,
@@ -48,9 +48,9 @@ export const LEVEL_1 = Object.freeze({
   ],
   goals: [
     { id: 'goal-1', x: 120, y: 960, value: 25, operator: '-', width: 160, height: 80 },
-    { id: 'goal-2', x: 440, y: 960, value: 5, operator: '-', width: 160, height: 80 },
-    { id: 'goal-3', x: 700, y: 960, value: 6, operator: '-', width: 160, height: 80 },
-    { id: 'goal-4', x: 960, y: 960, value: 7, operator: '-', width: 160, height: 80 },
+    { id: 'goal-2', x: 440, y: 960, value: 5, operator: '+', width: 160, height: 80 },
+    { id: 'goal-3', x: 700, y: 960, value: 6, operator: '+', width: 160, height: 80 },
+    { id: 'goal-4', x: 960, y: 960, value: 7, operator: '+', width: 160, height: 80 },
     { id: 'goal-5', x: 1220, y: 960, value: 8, operator: '-', width: 160, height: 80 },
     { id: 'goal-6', x: 1480, y: 960, value: 10, operator: '-', width: 160, height: 80 },
     { id: 'goal-7', x: 1760, y: 960, value: 20, operator: '-', width: 160, height: 80 },

@@ -16,7 +16,7 @@ import { BackgroundLayer } from '../rendering/BackgroundLayer.js';
 import { VISUAL_ASSETS } from '../config/visualAssets.js';
 
 export class MarbleDropGame {
-  constructor({ renderer, physics, textureCache, visualTextureCache = null, assetService, level = LEVEL_1, clock = null, feedbackService = null, soundService = null, runRecorder = null } = {}) {
+  constructor({ renderer, physics, textureCache, visualTextureCache = null, assetService, level = LEVEL_1, clock = null, feedbackService = null, soundService = null, runRecorder = null, operationCard = null } = {}) {
     this.renderer = renderer;
     this.physics = physics;
     this.textureCache = textureCache;
@@ -66,6 +66,7 @@ export class MarbleDropGame {
     this.pointerHandler = null;
 
     this.soundService = soundService || null;
+    this.operationCard = operationCard || null;
   }
 
   async init() {
@@ -179,6 +180,7 @@ export class MarbleDropGame {
         range: g.range,
         physicsWorld: this.physics,
         parentContainer: parent,
+        numberTextureCache: this.textureCache,
       });
       this.gates.push(gate);
       const handle = gate.getColliderHandle();
@@ -569,6 +571,20 @@ export class MarbleDropGame {
             timestampMs: nowMs,
           });
 
+          // Show operation card for successful Goal collision
+          if (this.operationCard && typeof this.operationCard.show === 'function') {
+            try {
+              this.operationCard.show({
+                previousValue,
+                operator: targetMeta.operator,
+                operand: targetMeta.value,
+                nextValue,
+              });
+            } catch (e) {
+              // non-fatal
+            }
+          }
+
           // Check completion conditions
           if (nextValue === this.level.targetValue || (this.level.goals && this.level.goals[0] && nextValue === this.level.goals[0].value)) {
             this.session.requestCompletion({ reason: 'target_reached', success: true });
@@ -666,6 +682,15 @@ export class MarbleDropGame {
     // Clear feedback immediately
     if (this.feedback) {
       this.feedback.clear();
+    }
+
+    // Clear operation card
+    if (this.operationCard && typeof this.operationCard.clear === 'function') {
+      try {
+        this.operationCard.clear();
+      } catch (e) {
+        // non-fatal
+      }
     }
 
     this.clearLevelEntities();

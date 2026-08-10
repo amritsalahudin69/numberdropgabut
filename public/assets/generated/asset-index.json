@@ -185,7 +185,7 @@
   },
   "46": {
     "png": "/assets/numbers/46.png",
-    "gif": null
+    "gif": "/assets/gif/46.gif"
   },
   "47": {
     "png": "/assets/numbers/47.png",
@@ -402,5 +402,201 @@
   "100": {
     "png": "/assets/numbers/100.png",
     "gif": "/assets/gif/100.gif"
+  },
+  "112": {
+    "png": "/assets/numbers/112.png",
+    "gif": null
+  },
+  "148": {
+    "png": "/assets/numbers/148.png",
+    "gif": null
+  },
+  "192": {
+    "png": "/assets/numbers/192.png",
+    "gif": null
+  },
+  "199": {
+    "png": "/assets/numbers/199.png",
+    "gif": null
+  },
+  "203": {
+    "png": "/assets/numbers/203.png",
+    "gif": null
+  },
+  "210": {
+    "png": "/assets/numbers/210.png",
+    "gif": null
+  },
+  "292": {
+    "png": "/assets/numbers/292.png",
+    "gif": null
+  },
+  "293": {
+    "png": "/assets/numbers/293.png",
+    "gif": null
+  },
+  "294": {
+    "png": "/assets/numbers/294.png",
+    "gif": null
+  },
+  "295": {
+    "png": "/assets/numbers/295.png",
+    "gif": null
+  },
+  "296": {
+    "png": "/assets/numbers/296.png",
+    "gif": null
+  },
+  "297": {
+    "png": "/assets/numbers/297.png",
+    "gif": null
+  },
+  "298": {
+    "png": "/assets/numbers/298.png",
+    "gif": null
+  },
+  "299": {
+    "png": "/assets/numbers/299.png",
+    "gif": null
+  },
+  "300": {
+    "png": "/assets/numbers/300.png",
+    "gif": null
+  },
+  "348": {
+    "png": "/assets/numbers/348.png",
+    "gif": null
+  },
+  "398": {
+    "png": "/assets/numbers/398.png",
+    "gif": null
+  },
+  "401": {
+    "png": "/assets/numbers/401.png",
+    "gif": "/assets/gif/401.gif"
+  },
+  "402": {
+    "png": "/assets/numbers/402.png",
+    "gif": "/assets/gif/402.gif"
+  },
+  "403": {
+    "png": "/assets/numbers/403.png",
+    "gif": "/assets/gif/403.gif"
+  },
+  "404": {
+    "png": "/assets/numbers/404.png",
+    "gif": "/assets/gif/404.gif"
+  },
+  "405": {
+    "png": "/assets/numbers/405.png",
+    "gif": "/assets/gif/405.gif"
+  },
+  "406": {
+    "png": "/assets/numbers/406.png",
+    "gif": "/assets/gif/406.gif"
+  },
+  "407": {
+    "png": "/assets/numbers/407.png",
+    "gif": "/assets/gif/407.gif"
+  },
+  "408": {
+    "png": "/assets/numbers/408.png",
+    "gif": "/assets/gif/408.gif"
+  },
+  "409": {
+    "png": "/assets/numbers/409.png",
+    "gif": "/assets/gif/409.gif"
+  },
+  "410": {
+    "png": "/assets/numbers/410.png",
+    "gif": "/assets/gif/410.gif"
+  },
+  "411": {
+    "png": "/assets/numbers/411.png",
+    "gif": "/assets/gif/411.gif"
+  },
+  "493": {
+    "png": "/assets/numbers/493.png",
+    "gif": null
+  },
+  "910": {
+    "png": "/assets/numbers/910.png",
+    "gif": null
+  },
+  "920": {
+    "png": "/assets/numbers/920.png",
+    "gif": null
+  },
+  "930": {
+    "png": "/assets/numbers/930.png",
+    "gif": null
+  },
+  "940": {
+    "png": "/assets/numbers/940.png",
+    "gif": null
+  },
+  "950": {
+    "png": "/assets/numbers/950.png",
+    "gif": null
+  },
+  "960": {
+    "png": "/assets/numbers/960.png",
+    "gif": null
+  },
+  "970": {
+    "png": "/assets/numbers/970.png",
+    "gif": null
+  },
+  "980": {
+    "png": "/assets/numbers/980.png",
+    "gif": null
+  },
+  "990": {
+    "png": "/assets/numbers/990.png",
+    "gif": null
+  },
+  "1000": {
+    "png": "/assets/numbers/1000.png",
+    "gif": null
+  },
+  "1910": {
+    "png": "/assets/numbers/1910.png",
+    "gif": null
+  },
+  "1920": {
+    "png": "/assets/numbers/1920.png",
+    "gif": null
+  },
+  "1930": {
+    "png": "/assets/numbers/1930.png",
+    "gif": null
+  },
+  "1940": {
+    "png": "/assets/numbers/1940.png",
+    "gif": null
+  },
+  "1950": {
+    "png": "/assets/numbers/1950.png",
+    "gif": null
+  },
+  "1960": {
+    "png": "/assets/numbers/1960.png",
+    "gif": null
+  },
+  "1970": {
+    "png": "/assets/numbers/1970.png",
+    "gif": null
+  },
+  "1980": {
+    "png": "/assets/numbers/1980.png",
+    "gif": null
+  },
+  "1990": {
+    "png": "/assets/numbers/1990.png",
+    "gif": null
+  },
+  "2000": {
+    "png": "/assets/numbers/2000.png",
+    "gif": null
   }
 }

@@ -1,3 +1,5 @@
+npm run assets:index
+
 ubah ukuran
 \src\entities\Goal.js :
 //---------------------------------------------------------
