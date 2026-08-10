@@ -42,7 +42,7 @@ export const LEVEL_1 = Object.freeze({
     { id: 'peg-11', x: 1780, y: 640, radius: 15 },
   ],
   gates: [
-    { id: 'gate-1', x: 600, y: 320, operator: '-', operand: 1, speed: 1, range: 100, width: 140, height: 50 },
+    { id: 'gate-1', x: 600, y: 320, operator: '-', operand: 1, speed: 2, range: 300, width: 140, height: 50 },
     { id: 'gate-2', x: 1320, y: 320, operator: '-', operand: 2, speed: 1.1, range: 100, width: 140, height: 50 },
     { id: 'gate-3', x: 960, y: 580, operator: '*', operand: 1, speed: 0.8, range: 150, width: 140, height: 50 },
   ],
