@@ -78,3 +78,18 @@ export const VISUAL_ASSETS = Object.freeze({
 });
 
 Kalau mau gan
+
+1. Ukuran gacoan
+File:
+
+src/entities/Gacoan.js
+
+Cari:
+
+radiusPx = 58
+
+
+
+
+
+besar kecilnya gif : \src\config\constants.js export const FEEDBACK_LOGICAL_SIZE = 500;
