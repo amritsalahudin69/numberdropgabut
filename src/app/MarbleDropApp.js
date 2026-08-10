@@ -10,6 +10,10 @@ import { VISUAL_ASSETS } from '../config/visualAssets.js';
 import { TargetStrip } from '../ui/TargetStrip.js';
 import { FeedbackService } from '../systems/FeedbackService.js';
 import { SoundService } from '../systems/SoundService.js';
+import { GameHud } from '../ui/GameHud.js';
+import { ResultOverlay } from '../ui/ResultOverlay.js';
+import { ResultService } from '../systems/ResultService.js';
+import { JsonExporter } from '../systems/JsonExporter.js';
 
 export const APP_STATE = Object.freeze({
   CREATED: 'CREATED',
@@ -87,11 +91,77 @@ export class MarbleDropApp {
       await this.game.init();
       this.game.start();
 
+      // Setup HUD and overlay wiring state
+      this.hud = null;
+      this.resultOverlay = null;
+      this.cachedResult = null;
+      this._overlayMounted = false;
+      this._lastHudSnapshot = null;
+
+      // Create HUD instance (mount to renderer.hostElement if available)
+      try {
+        const hostEl = this.renderer && this.renderer.hostElement ? this.renderer.hostElement : null;
+        this.hud = new GameHud({ session: this.game.session, level: this.level, runRecorder: this.game.runRecorder });
+        if (hostEl) this.hud.mount(hostEl);
+      } catch (e) {
+        // Non-fatal: HUD may not mount in test environment without DOM
+        // Leave this.hud as created instance for tests to inspect
+      }
+
       if (this.renderer && this.renderer.app && this.renderer.app.ticker) {
         this.tickerCallback = (ticker) => {
           const deltaSeconds = ticker.deltaTime / 60;
           if (this.game) {
             this.game.update(deltaSeconds);
+          }
+
+          // Post-frame: deterministic HUD refresh and SUMMARY detection
+          try {
+            // HUD update only when mounted and values changed
+            if (this.hud && typeof this.hud.update === 'function') {
+              const snap = {
+                current: this.game.session.getCurrentValue(),
+                opsUsed: this.game.session.getOpsUsed(),
+                opsRemaining: this.game.session.getOpsRemaining(),
+                lastOpSeq: this.game.runRecorder.getLastOperation() ? this.game.runRecorder.getLastOperation().seq : 0,
+              };
+              const last = this._lastHudSnapshot || {};
+              const changed = snap.current !== last.current || snap.opsUsed !== last.opsUsed || snap.opsRemaining !== last.opsRemaining || snap.lastOpSeq !== last.lastOpSeq;
+              if (changed) {
+                this.hud.update();
+                this._lastHudSnapshot = snap;
+              }
+            }
+
+            // SUMMARY handling: build once and mount overlay once
+            const sessionState = this.game.session.getState();
+            const hostEl = this.renderer && this.renderer.hostElement ? this.renderer.hostElement : null;
+            if (sessionState === 'SUMMARY' && !this._overlayMounted) {
+              this.cachedResult = ResultService.buildResult({
+                level: this.level,
+                session: this.game.session,
+                runRecorder: this.game.runRecorder,
+                startedAtMs: this.game.startedAtMs,
+                completedAtMs: this.game.completedAtMs,
+              });
+
+              // Create overlay instance and mount it if a host DOM element exists
+              this.resultOverlay = new ResultOverlay({
+                result: this.cachedResult,
+                onExport: () => {
+                  try { JsonExporter.export({ result: this.cachedResult }); } catch (e) {}
+                },
+                onRestart: () => this._handleRestart(),
+              });
+              if (hostEl) {
+                try { this.resultOverlay.mount(hostEl); } catch (e) {}
+              }
+
+              this._overlayMounted = true;
+            }
+          } catch (e) {
+            // swallow to avoid breaking ticker loop
+            // errors during UI mount in test env are non-fatal
           }
         };
         this.renderer.app.ticker.add(this.tickerCallback);
@@ -180,12 +250,52 @@ export class MarbleDropApp {
     }
   }
 
+  _handleRestart() {
+    // Called when ResultOverlay requests an authoritative restart
+    try {
+      // Remove overlay if mounted
+      if (this.resultOverlay && typeof this.resultOverlay.destroy === 'function') {
+        try { this.resultOverlay.destroy(); } catch (e) {}
+        this.resultOverlay = null;
+      }
+      this._overlayMounted = false;
+      this.cachedResult = null;
+
+      // Clear recorder then reset game/session state
+      try { if (this.game && this.game.runRecorder && typeof this.game.runRecorder.clear === 'function') this.game.runRecorder.clear(); } catch (e) {}
+
+      // Clear session completion flags explicitly before reset
+      try { if (this.game && this.game.session) { this.game.session._completionRequested = false; this.game.session._completionReason = null; this.game.session._completionSuccess = null; } } catch (e) {}
+
+      if (this.game && typeof this.game.reset === 'function') {
+        this.game.reset();
+      }
+
+      // Reset HUD
+      try { if (this.hud && typeof this.hud.reset === 'function') this.hud.reset(); } catch (e) {}
+
+    } catch (e) {
+      // swallow non-fatal
+    }
+  }
+
   destroy() {
     this.state = APP_STATE.DESTROYED;
     if (this.renderer && this.renderer.app && this.renderer.app.ticker && this.tickerCallback) {
       this.renderer.app.ticker.remove(this.tickerCallback);
       this.tickerCallback = null;
     }
+
+    // Destroy overlay/hud if present
+    if (this.resultOverlay && typeof this.resultOverlay.destroy === 'function') {
+      try { this.resultOverlay.destroy(); } catch (e) {}
+      this.resultOverlay = null;
+    }
+    if (this.hud && typeof this.hud.destroy === 'function') {
+      try { this.hud.destroy(); } catch (e) {}
+      this.hud = null;
+    }
+
     if (this.game && typeof this.game.destroy === 'function') {
       this.game.destroy();
       this.game = null;

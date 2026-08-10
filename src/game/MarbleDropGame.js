@@ -10,12 +10,13 @@ import { Gacoan } from '../entities/Gacoan.js';
 import { Peg } from '../entities/Peg.js';
 import { Gate } from '../entities/Gate.js';
 import { Goal } from '../entities/Goal.js';
+import { RunRecorder } from '../systems/RunRecorder.js';
 
 import { BackgroundLayer } from '../rendering/BackgroundLayer.js';
 import { VISUAL_ASSETS } from '../config/visualAssets.js';
 
 export class MarbleDropGame {
-  constructor({ renderer, physics, textureCache, visualTextureCache = null, assetService, level = LEVEL_1, clock = null, feedbackService = null, soundService = null } = {}) {
+  constructor({ renderer, physics, textureCache, visualTextureCache = null, assetService, level = LEVEL_1, clock = null, feedbackService = null, soundService = null, runRecorder = null } = {}) {
     this.renderer = renderer;
     this.physics = physics;
     this.textureCache = textureCache;
@@ -27,6 +28,17 @@ export class MarbleDropGame {
     this.session = new MarbleDropSession();
     this.registry = new CollisionRegistry();
     this.resolver = null;
+
+    // RunRecorder: injected in tests, created in production
+    if (runRecorder !== undefined && runRecorder !== null) {
+      this.runRecorder = runRecorder;
+    } else {
+      this.runRecorder = new RunRecorder();
+    }
+
+    // Timing for telemetry
+    this.startedAtMs = null;
+    this.completedAtMs = null;
 
     // consumedGateIds: gates consumed by current active gacoan (one-drop lifetime)
     this.consumedGateIds = new Set();
@@ -125,6 +137,7 @@ export class MarbleDropGame {
 
   start() {
     this.session.start(this.level);
+    this.startedAtMs = this.clock.now();
     this.buildLevelEntities();
   }
 
@@ -271,7 +284,7 @@ export class MarbleDropGame {
       texture,
       x: clampedX,
       y: dropZone.y,
-      radiusPx: 40,
+      radiusPx: 58,
       physicsWorld: this.physics,
       parentContainer: this.container,
     });
@@ -403,6 +416,14 @@ export class MarbleDropGame {
 
       // Peg: physics only, no gameplay operation — play peg sound optionally
       if (targetMeta.type === 'peg') {
+        const nowMs = this.clock.now();
+        this.runRecorder.recordCollision({
+          type: 'peg',
+          entityId: targetMeta.entity && targetMeta.entity.id ? targetMeta.entity.id : null,
+          accepted: true,
+          reason: 'physics_only',
+          timestampMs: nowMs,
+        });
         try {
           if (this.soundService && typeof this.soundService.playPeg === 'function') {
             this.soundService.playPeg();
@@ -417,10 +438,21 @@ export class MarbleDropGame {
         // Determine gate id and check consumed set
         const gateEntity = targetMeta.entity;
         const gateId = gateEntity && gateEntity.id ? gateEntity.id : (targetMeta.id || null);
+        const nowMs = this.clock.now();
         if (!gateId) return;
 
+        // Record collision
+        const isConsumed = this.consumedGateIds.has(gateId);
+        this.runRecorder.recordCollision({
+          type: 'gate',
+          entityId: gateId,
+          accepted: !isConsumed,
+          reason: isConsumed ? 'already_consumed' : 'new',
+          timestampMs: nowMs,
+        });
+
         // If gate already consumed for this active gacoan, ignore
-        if (this.consumedGateIds.has(gateId)) return;
+        if (isConsumed) return;
 
         // Mark gate consumed for this active gacoan before resolving to ensure once-per-gacoan semantics
         this.consumedGateIds.add(gateId);
@@ -437,6 +469,9 @@ export class MarbleDropGame {
           return;
         }
 
+        const previousValue = (typeof this.session.getCurrentValue === 'function')
+          ? this.session.getCurrentValue()
+          : (this.session.currentValue !== undefined ? this.session.currentValue : 0);
         const res = this.resolver.resolveOperationHit({
           operator: targetMeta.operator,
           operand: targetMeta.operand,
@@ -444,6 +479,30 @@ export class MarbleDropGame {
         });
 
         if (res && res.ok) {
+                  const nextValue = (typeof this.session.getCurrentValue === 'function')
+                    ? this.session.getCurrentValue()
+                    : (this.session.currentValue !== undefined ? this.session.currentValue : 0);
+          
+          // Record operation on successful resolution
+          this.runRecorder.recordOperation({
+            source: 'gate',
+            sourceId: gateId,
+            operator: targetMeta.operator,
+            operand: targetMeta.operand,
+            previousValue,
+            nextValue,
+            timestampMs: nowMs,
+          });
+
+          // Record evolution on value change
+          this.runRecorder.recordEvolution({
+            previousValue,
+            nextValue,
+            source: 'gate',
+            sourceId: gateId,
+            timestampMs: nowMs,
+          });
+
           try {
             if (this.soundService && typeof this.soundService.playGate === 'function') {
               this.soundService.playGate();
@@ -457,6 +516,16 @@ export class MarbleDropGame {
         }
       } else if (targetMeta.type === 'goal') {
         // Goals are terminal for the gacoan lifecycle — treat normally without gate blocking
+        const nowMs = this.clock.now();
+        const goalId = targetMeta.id || null;
+        this.runRecorder.recordCollision({
+          type: 'goal',
+          entityId: goalId,
+          accepted: true,
+          reason: 'terminal',
+          timestampMs: nowMs,
+        });
+
         try {
           if (this.session && typeof this.session.beginResolve === 'function' && this.session.getState() === GAMEPLAY_STATE.FALLING) {
             this.session.beginResolve();
@@ -466,6 +535,9 @@ export class MarbleDropGame {
           return;
         }
 
+        const previousValue = (typeof this.session.getCurrentValue === 'function')
+          ? this.session.getCurrentValue()
+          : (this.session.currentValue !== undefined ? this.session.currentValue : 0);
         const res = this.resolver.resolveOperationHit({
           operator: targetMeta.operator,
           operand: targetMeta.value,
@@ -473,6 +545,41 @@ export class MarbleDropGame {
         });
 
         if (res && res.ok) {
+                  const nextValue = (typeof this.session.getCurrentValue === 'function')
+                    ? this.session.getCurrentValue()
+                    : (this.session.currentValue !== undefined ? this.session.currentValue : 0);
+          
+          // Record operation on successful resolution
+          this.runRecorder.recordOperation({
+            source: 'goal',
+            sourceId: goalId,
+            operator: targetMeta.operator,
+            operand: targetMeta.value,
+            previousValue,
+            nextValue,
+            timestampMs: nowMs,
+          });
+
+          // Record evolution on value change
+          this.runRecorder.recordEvolution({
+            previousValue,
+            nextValue,
+            source: 'goal',
+            sourceId: goalId,
+            timestampMs: nowMs,
+          });
+
+          // Check completion conditions
+          if (nextValue === this.level.targetValue || (this.level.goals && this.level.goals[0] && nextValue === this.level.goals[0].value)) {
+            this.session.requestCompletion({ reason: 'target_reached', success: true });
+          } else {
+            const opsUsed = (typeof this.session.getOpsUsed === 'function') ? this.session.getOpsUsed() : (this.session.opsUsed !== undefined ? this.session.opsUsed : 0);
+            const maxOps = this.session && typeof this.session.maxOps !== 'undefined' ? this.session.maxOps : (this.level && this.level.maxOps ? this.level.maxOps : 6);
+            if (opsUsed >= maxOps) {
+              this.session.requestCompletion({ reason: 'max_ops_exhausted', success: false });
+            }
+          }
+
           try {
             if (this.soundService && typeof this.soundService.playGoal === 'function') {
               this.soundService.playGoal();
@@ -546,6 +653,12 @@ export class MarbleDropGame {
 
     if (this.session.getState() === GAMEPLAY_STATE.CLEANUP) {
       this.session.finishCleanup();
+      
+      // Check if completion was requested and handle transition to SUMMARY
+      if (this.session.isCompletionRequested()) {
+        this.completedAtMs = this.clock.now();
+        this.session.complete();
+      }
     }
   }
 

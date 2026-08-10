@@ -37,17 +37,15 @@ export class Goal {
     // Use character visual if texture provided (preloaded from NumberTextureCache)
     if (texture) {
       const sprite = new Sprite(texture);
-      sprite.anchor.set(0.5);
-      // Scale to fit within logical goal area
-      const maxDim = Math.min(width, height) * 0.8;
-      const spriteAspect = (texture.width || 1) / (texture.height || 1);
-      if (spriteAspect > 1) {
-        sprite.width = maxDim;
-        sprite.height = maxDim / spriteAspect;
-      } else {
-        sprite.height = maxDim;
-        sprite.width = maxDim * spriteAspect;
-      }
+      sprite.anchor.set(0.5, 1);
+      // Use height as desired size, preserve aspect ratio
+      const desiredHeight = Math.max(1, Math.round(height));
+      const texW = Math.max(1, texture.baseTexture?.width || texture.width || desiredHeight);
+      const texH = Math.max(1, texture.baseTexture?.height || texture.height || desiredHeight);
+      const aspect = texW / texH;
+      sprite.height = desiredHeight;
+      sprite.width = Math.round(desiredHeight * aspect);
+      sprite.alpha = 0.95;
       this.container.addChild(sprite);
     } else {
       // Fallback: simple placeholder visual

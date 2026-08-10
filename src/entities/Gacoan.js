@@ -1,5 +1,9 @@
 import { Sprite, Container, Graphics } from 'pixi.js';
 
+// Visual and physics dimensions are intentionally decoupled
+const GACOAN_VISUAL_SIZE = 58;        // radiusPx for sprite dimension (diameter = 116×116)
+const GACOAN_COLLIDER_RADIUS = 40;    // physics collider radius (unchanged from original)
+
 export class Gacoan {
   constructor() {
     this.value = 0;
@@ -8,7 +12,7 @@ export class Gacoan {
     this.body = null;
     this.collider = null;
     this.physicsWorld = null;
-    this.radiusPx = 40;
+    this.radiusPx = GACOAN_VISUAL_SIZE;
     this.destroyed = false;
 
     this._frozen = false;
@@ -16,7 +20,7 @@ export class Gacoan {
     this._savedAngvel = null;
   }
 
-  spawn({ value, texture, x, y, radiusPx = 40, physicsWorld, parentContainer }) {
+  spawn({ value, texture, x, y, radiusPx = GACOAN_VISUAL_SIZE, physicsWorld, parentContainer }) {
     this.value = value;
     this.radiusPx = radiusPx;
     this.physicsWorld = physicsWorld;
@@ -50,7 +54,8 @@ export class Gacoan {
           .setCcdEnabled(true);
         this.body = world.createRigidBody(bodyDesc);
 
-        const colliderDesc = rapier.ColliderDesc.ball(this.physicsWorld.toMeters(radiusPx))
+        // LOCKED: Physics collider radius remains 40px, decoupled from visual size
+        const colliderDesc = rapier.ColliderDesc.ball(this.physicsWorld.toMeters(GACOAN_COLLIDER_RADIUS))
           .setRestitution(0.6)
           .setFriction(0.2);
 

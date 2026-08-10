@@ -17,7 +17,9 @@
     "assets:visual": "node scripts/validate-visual-assets.mjs",
     "test:visual": "node tests/visual-assets.test.mjs && node tests/background-layer.test.mjs && node tests/visual-wiring.test.mjs && node tests/visual-boot-contract.test.mjs",
     "test:parity": "node tests/required-number-assets.test.mjs && node tests/goal-character.test.mjs && node tests/target-strip.test.mjs && node tests/sound-service.test.mjs && node tests/sound-wiring.test.mjs",
-    "check": "npm run assets:index && npm run assets:validate && npm run assets:level && npm run assets:visual && npm run test:foundation && npm run test:core && npm run test:feedback && npm run test:lifecycle && npm run test:gate-lock && npm run test:visual && npm run test:parity && npm run build"
+    "test:telemetry": "node tests/telemetry-wiring.test.mjs && node tests/run-recorder.test.mjs && node tests/result-service.test.mjs",
+    "test:completion": "node tests/visual-scale.test.mjs && node tests/game-hud.test.mjs && node tests/result-overlay.test.mjs && node tests/json-exporter.test.mjs && node tests/final-lifecycle.test.mjs", "test:final-wiring": "node tests/final-app-wiring.test.mjs",
+    "check": "npm run assets:index && npm run assets:validate && npm run assets:level && npm run assets:visual && npm run test:foundation && npm run test:core && npm run test:feedback && npm run test:lifecycle && npm run test:gate-lock && npm run test:visual && npm run test:parity && npm run test:telemetry && npm run test:completion && npm run test:final-wiring && npm run build"
   },
   "dependencies": {
     "@dimforge/rapier2d-compat": "^0.14.0",
