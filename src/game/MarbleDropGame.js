@@ -6,17 +6,18 @@ import { CollisionResolver } from '../systems/CollisionResolver.js';
 import { FeedbackService } from '../systems/FeedbackService.js';
 import { Clock } from '../core/Clock.js';
 import { COLLISION_FEEDBACK_MS } from '../config/constants.js';
-import { Gacoan } from '../entities/Gacoan.js';
+import { Gacoan, GACOAN_COLLIDER_RADIUS } from '../entities/Gacoan.js';
 import { Peg } from '../entities/Peg.js';
 import { Gate } from '../entities/Gate.js';
 import { Goal } from '../entities/Goal.js';
 import { RunRecorder } from '../systems/RunRecorder.js';
+import { GacoanStallGuard } from '../systems/GacoanStallGuard.js';
 
 import { BackgroundLayer } from '../rendering/BackgroundLayer.js';
 import { VISUAL_ASSETS } from '../config/visualAssets.js';
 
 export class MarbleDropGame {
-  constructor({ renderer, physics, textureCache, visualTextureCache = null, assetService, level = LEVEL_1, clock = null, feedbackService = null, soundService = null, runRecorder = null } = {}) {
+  constructor({ renderer, physics, textureCache, visualTextureCache = null, assetService, level = LEVEL_1, clock = null, feedbackService = null, soundService = null, runRecorder = null, operationCard = null } = {}) {
     this.renderer = renderer;
     this.physics = physics;
     this.textureCache = textureCache;
@@ -66,6 +67,10 @@ export class MarbleDropGame {
     this.pointerHandler = null;
 
     this.soundService = soundService || null;
+    this.operationCard = operationCard || null;
+
+    // Stall guard: monitors active gacoan during FALLING and applies small deterministic impulse to escape peg stalls
+    this.stallGuard = new GacoanStallGuard({ session: this.session, physics: this.physics, getPegs: () => this.pegs, gacoanColliderRadius: GACOAN_COLLIDER_RADIUS });
   }
 
   async init() {
@@ -179,6 +184,7 @@ export class MarbleDropGame {
         range: g.range,
         physicsWorld: this.physics,
         parentContainer: parent,
+        numberTextureCache: this.textureCache,
       });
       this.gates.push(gate);
       const handle = gate.getColliderHandle();
@@ -235,6 +241,11 @@ export class MarbleDropGame {
 
       // Clear consumed gate IDs when active gacoan ownership ends
       this.consumedGateIds.clear();
+
+      // Notify stall guard
+      if (this.stallGuard && typeof this.stallGuard.onActiveGacoanCleanup === 'function') {
+        try { this.stallGuard.onActiveGacoanCleanup(); } catch (e) {}
+      }
     }
 
     for (const p of this.pegs) p.destroy();
@@ -339,6 +350,17 @@ export class MarbleDropGame {
     // Sync active gacoan position (only when not frozen / falling)
     if (this.activeGacoan && state === GAMEPLAY_STATE.FALLING) {
       this.activeGacoan.syncFromPhysics();
+
+      // Update stall guard to detect and resolve peg stalls
+      try {
+        if (this.stallGuard && typeof this.stallGuard.update === 'function') {
+          this.stallGuard.update(this.clock.now(), deltaSeconds);
+        }
+      } catch (e) {
+        // Non-fatal
+        console.error('[MarbleDropGame] stallGuard.update error', e);
+      }
+
       this.checkOutOfBounds();
     }
 
@@ -569,6 +591,20 @@ export class MarbleDropGame {
             timestampMs: nowMs,
           });
 
+          // Show operation card for successful Goal collision
+          if (this.operationCard && typeof this.operationCard.show === 'function') {
+            try {
+              this.operationCard.show({
+                previousValue,
+                operator: targetMeta.operator,
+                operand: targetMeta.value,
+                nextValue,
+              });
+            } catch (e) {
+              // non-fatal
+            }
+          }
+
           // Check completion conditions
           if (nextValue === this.level.targetValue || (this.level.goals && this.level.goals[0] && nextValue === this.level.goals[0].value)) {
             this.session.requestCompletion({ reason: 'target_reached', success: true });
@@ -651,6 +687,11 @@ export class MarbleDropGame {
     // Clear consumed gate IDs when active gacoan ownership ends
     this.consumedGateIds.clear();
 
+    // Notify stall guard
+    if (this.stallGuard && typeof this.stallGuard.onActiveGacoanCleanup === 'function') {
+      try { this.stallGuard.onActiveGacoanCleanup(); } catch (e) {}
+    }
+
     if (this.session.getState() === GAMEPLAY_STATE.CLEANUP) {
       this.session.finishCleanup();
       
@@ -666,6 +707,20 @@ export class MarbleDropGame {
     // Clear feedback immediately
     if (this.feedback) {
       this.feedback.clear();
+    }
+
+    // Clear operation card
+    if (this.operationCard && typeof this.operationCard.clear === 'function') {
+      try {
+        this.operationCard.clear();
+      } catch (e) {
+        // non-fatal
+      }
+    }
+
+    // Reset stall guard
+    if (this.stallGuard && typeof this.stallGuard.onReset === 'function') {
+      try { this.stallGuard.onReset(); } catch (e) {}
     }
 
     this.clearLevelEntities();

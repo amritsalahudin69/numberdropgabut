@@ -1,4 +1,4 @@
-import { Container, Graphics, Text } from 'pixi.js';
+import { Container, Graphics, Text, Sprite } from 'pixi.js';
 
 export class Gate {
   constructor(config = {}) {
@@ -19,13 +19,14 @@ export class Gate {
     this.collider = null;
     this.physicsWorld = null;
     this.destroyed = false;
+    this.numberTextureCache = null;
 
     if (config.physicsWorld && config.parentContainer) {
       this.spawn(config);
     }
   }
 
-  spawn({ id, operator, operand, x, y, width = 140, height = 50, speed = 0, range = 0, physicsWorld, parentContainer }) {
+  spawn({ id, operator, operand, x, y, width = 140, height = 50, speed = 0, range = 0, physicsWorld, parentContainer, numberTextureCache }) {
     this.id = id;
     this.operator = operator;
     this.operand = operand;
@@ -37,6 +38,7 @@ export class Gate {
     this.speed = speed;
     this.range = range;
     this.physicsWorld = physicsWorld;
+    this.numberTextureCache = numberTextureCache;
 
     this.container = new Container();
     this.container.position.set(x, y);
@@ -44,19 +46,67 @@ export class Gate {
     const box = new Graphics();
     box.roundRect(-width / 2, -height / 2, width, height, 10).fill(0x3498db);
 
-    const opLabelText = `${this.operator}${this.operand}`;
+    const opLabelText = `${this.operator}`;
     const label = new Text({
       text: opLabelText,
       style: {
         fill: '#ffffff',
-        fontSize: 24,
+        fontSize: 20,
         fontWeight: 'bold',
         stroke: { color: '#122033', width: 3 },
       },
     });
     label.anchor.set(0.5);
+    label.x = -30;
 
     this.container.addChild(box, label);
+
+    // Add operand character texture if available
+    if (this.numberTextureCache && this.numberTextureCache.has(this.operand)) {
+      try {
+        const texture = this.numberTextureCache.get(this.operand);
+        const sprite = new Sprite(texture);
+        sprite.anchor.set(0.5);
+        // Visual size for character (independent of collider)
+        const charSize = Math.min(width, height) * 0.6;
+        const spriteAspect = (texture.width || 1) / (texture.height || 1);
+        if (spriteAspect > 1) {
+          sprite.width = charSize;
+          sprite.height = charSize / spriteAspect;
+        } else {
+          sprite.height = charSize;
+          sprite.width = charSize * spriteAspect;
+        }
+        sprite.x = 20;
+        this.container.addChild(sprite);
+      } catch (e) {
+        // fallback: show operand as text
+        const operandLabel = new Text({
+          text: String(this.operand),
+          style: {
+            fill: '#ffffff',
+            fontSize: 18,
+            fontWeight: 'bold',
+          },
+        });
+        operandLabel.anchor.set(0.5);
+        operandLabel.x = 20;
+        this.container.addChild(operandLabel);
+      }
+    } else {
+      // fallback: show operand as text
+      const operandLabel = new Text({
+        text: String(this.operand),
+        style: {
+          fill: '#ffffff',
+          fontSize: 18,
+          fontWeight: 'bold',
+        },
+      });
+      operandLabel.anchor.set(0.5);
+      operandLabel.x = 20;
+      this.container.addChild(operandLabel);
+    }
 
     if (parentContainer) {
       parentContainer.addChild(this.container);

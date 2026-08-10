@@ -8,6 +8,7 @@ import { LEVEL_1 } from '../config/levels/level1.js';
 import { VisualTextureCache } from '../systems/VisualTextureCache.js';
 import { VISUAL_ASSETS } from '../config/visualAssets.js';
 import { TargetStrip } from '../ui/TargetStrip.js';
+import { OperationCard } from '../ui/OperationCard.js';
 import { FeedbackService } from '../systems/FeedbackService.js';
 import { SoundService } from '../systems/SoundService.js';
 import { GameHud } from '../ui/GameHud.js';
@@ -69,11 +70,17 @@ export class MarbleDropApp {
 
       this.soundService = this.soundService || new SoundService({ assetService: this.assets });
       this.feedbackService = this.feedbackService || new FeedbackService(null, this.renderer);
+      this.operationCard = this.operationCard || new OperationCard({ numberTextureCache: this.textureCache, assetService: this.assets });
 
       // Target strip
       this.targetStrip = new TargetStrip({ level: this.level, numberTextureCache: this.textureCache, assetService: this.assets });
       if (this.uiRoot) {
         this.targetStrip.mount(this.uiRoot);
+      }
+
+      // Mount OperationCard to document.body for overlay presentation
+      if (typeof document !== 'undefined') {
+        this.operationCard.mount(document.body);
       }
 
       if (!this.game) {
@@ -86,6 +93,7 @@ export class MarbleDropApp {
           level: this.level,
           feedbackService: this.feedbackService,
           soundService: this.soundService,
+          operationCard: this.operationCard,
         });
       }
       await this.game.init();
@@ -152,6 +160,7 @@ export class MarbleDropApp {
                   try { JsonExporter.export({ result: this.cachedResult }); } catch (e) {}
                 },
                 onRestart: () => this._handleRestart(),
+                assetService: this.assets,
               });
               if (hostEl) {
                 try { this.resultOverlay.mount(hostEl); } catch (e) {}
@@ -217,6 +226,11 @@ export class MarbleDropApp {
     if (this.feedbackService && typeof this.feedbackService.destroy === 'function') {
       try { this.feedbackService.destroy(); } catch (e) {}
       this.feedbackService = null;
+    }
+
+    if (this.operationCard && typeof this.operationCard.destroy === 'function') {
+      try { this.operationCard.destroy(); } catch (e) {}
+      this.operationCard = null;
     }
 
     if (this.renderer && typeof this.renderer.destroy === 'function') {
@@ -325,6 +339,11 @@ export class MarbleDropApp {
     if (this.feedbackService && typeof this.feedbackService.destroy === 'function') {
       try { this.feedbackService.destroy(); } catch (e) {}
       this.feedbackService = null;
+    }
+
+    if (this.operationCard && typeof this.operationCard.destroy === 'function') {
+      try { this.operationCard.destroy(); } catch (e) {}
+      this.operationCard = null;
     }
 
     if (this.renderer && typeof this.renderer.destroy === 'function') {

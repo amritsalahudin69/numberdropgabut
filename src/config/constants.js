@@ -13,4 +13,4 @@ export const ASSET_PATHS = Object.freeze({
 });
 
 // Logical size (in world pixels) used by feedback visuals. Converted to client px by renderer scale.
-export const FEEDBACK_LOGICAL_SIZE = 120;
+export const FEEDBACK_LOGICAL_SIZE = 500;
