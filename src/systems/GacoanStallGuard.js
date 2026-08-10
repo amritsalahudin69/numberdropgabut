@@ -1,36 +1,40 @@
-import { PIXELS_PER_METER, DESIGN_WIDTH } from '../config/constants.js';
+import { PIXELS_PER_METER } from '../config/constants.js';
 
-// Conservative defaults
+// Defaults tuned for peg-aware detection
 const DEFAULT_STALL_TIME_MS = 700; // 600-800 ms recommended
-const DEFAULT_SPEED_THRESHOLD_PX = 5; // px/s considered near-zero
-const DEFAULT_POSITION_THRESHOLD_PX = 1.0; // px position change considered unchanged
-const DEFAULT_IMPULSE_DELTA_M_S = 0.2; // meters/sec delta applied as small horizontal kick
+const DEFAULT_CONTACT_TOLERANCE_PX = 2; // extra envelope around colliders
+const DEFAULT_MIN_DOWNWARD_PROGRESS_PX = 4; // required downward progress to not be considered stalled
+const DEFAULT_MIN_DOWNWARD_SPEED_MPS = 0.05; // small downward speed counts as progress (m/s)
+const DEFAULT_ESCAPE_MIN_SPEED_MPS = 0.4; // 0.4 m/s recommended
 
 export class GacoanStallGuard {
-  constructor({ session, physics, stallTimeMs = DEFAULT_STALL_TIME_MS, speedThresholdPx = DEFAULT_SPEED_THRESHOLD_PX, positionThresholdPx = DEFAULT_POSITION_THRESHOLD_PX, impulseDeltaMs = DEFAULT_IMPULSE_DELTA_M_S } = {}) {
+  constructor({ session, physics, getPegs = () => [], gacoanColliderRadius = 40, stallTimeMs = DEFAULT_STALL_TIME_MS, contactTolerancePx = DEFAULT_CONTACT_TOLERANCE_PX, minDownwardProgressPx = DEFAULT_MIN_DOWNWARD_PROGRESS_PX, minDownwardSpeedMps = DEFAULT_MIN_DOWNWARD_SPEED_MPS, escapeMinSpeedMps = DEFAULT_ESCAPE_MIN_SPEED_MPS } = {}) {
     this.session = session;
     this.physics = physics;
+    this.getPegs = getPegs;
+    this.gacoanColliderRadius = gacoanColliderRadius;
     this.stallTimeMs = stallTimeMs;
-    this.speedThresholdPx = speedThresholdPx;
-    this.positionThresholdPx = positionThresholdPx;
-    this.impulseDeltaMs = impulseDeltaMs; // m/s
+    this.contactTolerancePx = contactTolerancePx;
+    this.minDownwardProgressPx = minDownwardProgressPx;
+    this.minDownwardSpeedMps = minDownwardSpeedMps;
+    this.escapeMinSpeedMps = escapeMinSpeedMps;
 
     // runtime tracking
     this._trackingGacoan = null;
+    this._trackingPegId = null;
     this._stallStartAt = null; // ms
-    this._lastPos = null;
-    this._lastMeaningfulDir = 0; // -1, 0, 1
+    this._initialY = null;
+    this._maxYSeen = null;
     this._armed = true; // allow initial detection
-    this._lastImpulseAt = 0;
   }
 
   resetTracking() {
     this._trackingGacoan = null;
+    this._trackingPegId = null;
     this._stallStartAt = null;
-    this._lastPos = null;
-    this._lastMeaningfulDir = 0;
+    this._initialY = null;
+    this._maxYSeen = null;
     this._armed = true;
-    this._lastImpulseAt = 0;
   }
 
   // Should be called every update tick from MarbleDropGame.update
@@ -40,7 +44,6 @@ export class GacoanStallGuard {
     const state = this.session.getState ? this.session.getState() : null;
     // Only operate in FALLING
     if (state !== 'FALLING') {
-      // Ensure tracking cleared when not falling
       if (this._trackingGacoan) this.resetTracking();
       return;
     }
@@ -51,125 +54,109 @@ export class GacoanStallGuard {
       return;
     }
 
-    // Only dynamic bodies
-    const rapier = this.physics.getRapier && this.physics.getRapier();
-    if (!rapier) return;
-
-    // Track this gacoan instance
+    // If new gacoan, reset
     if (this._trackingGacoan !== g) {
       this._trackingGacoan = g;
+      this._trackingPegId = null;
       this._stallStartAt = null;
-      this._lastPos = g.getPosition ? g.getPosition() : null;
-      this._lastMeaningfulDir = 0;
+      this._initialY = null;
+      this._maxYSeen = null;
       this._armed = true;
-      this._lastImpulseAt = 0;
     }
 
-    // Get linear velocity in meters/sec
-    let linvel = null;
-    try {
-      linvel = g.body.linvel ? g.body.linvel() : null;
-    } catch (e) {
-      linvel = null;
-    }
-    if (!linvel) {
-      // cannot inspect velocity; bail
-      return;
-    }
-
-    // convert to px/s
-    const vx = linvel.x || 0;
-    const vy = linvel.y || 0;
-    const speedPx = Math.sqrt(vx * vx + vy * vy) * PIXELS_PER_METER;
-
-    // position in px
     const pos = g.getPosition ? g.getPosition() : null;
     if (!pos) return;
 
-    // Compute position delta since last sample
-    let movedPx = 0;
-    if (this._lastPos) {
-      const dx = pos.x - this._lastPos.x;
-      const dy = pos.y - this._lastPos.y;
-      movedPx = Math.sqrt(dx * dx + dy * dy);
+    // Find nearest peg within contact envelope
+    const pegs = (typeof this.getPegs === 'function') ? this.getPegs() : [];
+    let nearestPeg = null;
+    let nearestDist = Infinity;
+    for (const p of pegs || []) {
+      if (!p) continue;
+      const dx = pos.x - p.x;
+      const dy = pos.y - p.y;
+      const d = Math.sqrt(dx * dx + dy * dy);
+      const envelope = this.gacoanColliderRadius + (p.radius || 0) + this.contactTolerancePx;
+      if (d <= envelope && d < nearestDist) {
+        nearestDist = d;
+        nearestPeg = p;
+      }
     }
 
-    // If we see meaningful horizontal movement, record direction and reset stall timer
-    const meaningfulSpeedPx = this.speedThresholdPx * 1.5; // slightly above threshold
-    if (Math.abs(vx) * PIXELS_PER_METER > meaningfulSpeedPx || Math.abs(pos.x - (this._lastPos ? this._lastPos.x : pos.x)) > this.positionThresholdPx * 2) {
-      // meaningful horizontal movement
-      if (Math.abs(vx) > 1e-6) {
-        this._lastMeaningfulDir = Math.sign(vx);
-      } else {
-        this._lastMeaningfulDir = (pos.x - (this._lastPos ? this._lastPos.x : pos.x)) > 0 ? 1 : (pos.x - (this._lastPos ? this._lastPos.x : pos.x)) < 0 ? -1 : this._lastMeaningfulDir;
-      }
+    if (!nearestPeg) {
+      // Not near any peg — clear tracking if any
+      if (this._trackingPegId) this.resetTracking();
+      return;
+    }
+
+    const pegId = nearestPeg.id || `${nearestPeg.x}:${nearestPeg.y}`;
+
+    // If tracking different peg, reset tracking window
+    if (this._trackingPegId && this._trackingPegId !== pegId) {
+      this._trackingPegId = pegId;
       this._stallStartAt = null;
+      this._initialY = pos.y;
+      this._maxYSeen = pos.y;
       this._armed = true;
-      this._lastPos = pos;
-      return; // do not consider stall while meaningful movement observed
     }
 
-    // If speed is near zero and position hasn't changed much, start/continue stall timer
-    if (speedPx <= this.speedThresholdPx && movedPx <= this.positionThresholdPx) {
-      if (!this._stallStartAt) {
-        this._stallStartAt = nowMs;
-      } else {
-        const dt = nowMs - this._stallStartAt;
-        if (dt >= this.stallTimeMs && this._armed) {
-          // Trigger escape impulse exactly once per stall event
-          this._triggerEscape(nowMs, g);
-          this._armed = false;
-          this._stallStartAt = null; // reset until movement seen again
-        }
-      }
-    } else {
-      // Movement not stalled; reset timer
+    if (!this._trackingPegId) {
+      // start tracking this peg
+      this._trackingPegId = pegId;
       this._stallStartAt = null;
-      this._lastPos = pos;
-    }
-  }
-
-  _triggerEscape(nowMs, gacoan) {
-    if (!gacoan || !gacoan.body) return;
-
-    // Determine deterministic direction
-    let dir = this._lastMeaningfulDir;
-    if (!dir) {
-      // fallback: use position relative to center
-      let pos = gacoan.getPosition ? gacoan.getPosition() : { x: DESIGN_WIDTH / 2 };
-      dir = pos.x >= (DESIGN_WIDTH / 2) ? -1 : 1;
+      this._initialY = pos.y;
+      this._maxYSeen = pos.y;
+      this._armed = true;
     }
 
-    // Compute impulse delta in meters/sec
-    const dxMeters = (this.impulseDeltaMs || DEFAULT_IMPULSE_DELTA_M_S) * dir;
+    // Update maxYSeen
+    if (pos.y > this._maxYSeen) this._maxYSeen = pos.y;
 
-    // Try Rapier applyImpulse if available, otherwise adjust linear velocity directly
-    try {
-      if (typeof gacoan.body.applyImpulse === 'function') {
-        // applyImpulse expects an impulse vector (N*s), but as a conservative safe call use small impulse
-        // If mass unknown, use small value as approximation
-        gacoan.body.applyImpulse({ x: dxMeters, y: 0 }, true);
-      } else {
-        const curr = gacoan.body.linvel();
-        const newLv = { x: (curr.x || 0) + dxMeters, y: (curr.y || 0) };
-        if (typeof gacoan.body.setLinvel === 'function') {
-          gacoan.body.setLinvel(newLv, true);
-        }
-      }
-    } catch (e) {
-      // best-effort: try setLinvel fallback
+    const downwardProgress = this._maxYSeen - this._initialY;
+
+    // Consider downward velocity as meaningful progress as well
+    let linvel = { x: 0, y: 0 };
+    try { linvel = g.body.linvel ? g.body.linvel() : linvel; } catch (e) { linvel = linvel; }
+    const downwardSpeedMps = linvel.y || 0; // positive y is downward in world
+
+    // If sufficient downward progress observed, or vertical speed indicates downward movement, reset stall window
+    if (downwardProgress >= this.minDownwardProgressPx || downwardSpeedMps >= this.minDownwardSpeedMps) {
+      this._stallStartAt = null;
+      this._initialY = pos.y;
+      this._maxYSeen = pos.y;
+      this._armed = true;
+      return;
+    }
+
+    // Otherwise, start/continue stall timer while near same peg
+    if (!this._stallStartAt) {
+      this._stallStartAt = nowMs;
+      return;
+    }
+
+    const dt = nowMs - this._stallStartAt;
+    if (dt >= this.stallTimeMs && this._armed) {
+      // Confirmed peg-stall — escape horizontally away from peg
+      const dir = (pos.x < nearestPeg.x) ? -1 : (pos.x > nearestPeg.x) ? 1 : -1; // tie-break: left
       try {
-        const curr = gacoan.body.linvel();
-        const newLv = { x: (curr.x || 0) + dxMeters, y: (curr.y || 0) };
-        if (typeof gacoan.body.setLinvel === 'function') {
-          gacoan.body.setLinvel(newLv, true);
+        if (typeof g.ensureHorizontalEscapeVelocity === 'function') {
+          g.ensureHorizontalEscapeVelocity(dir, this.escapeMinSpeedMps);
+        } else {
+          // fallback: modify linvel directly
+          const curr = g.body.linvel ? g.body.linvel() : { x: 0, y: 0 };
+          const desiredX = (Math.abs(curr.x || 0) >= this.escapeMinSpeedMps) ? curr.x : (this.escapeMinSpeedMps * (dir >= 0 ? 1 : -1));
+          if (typeof g.body.setLinvel === 'function') {
+            g.body.setLinvel({ x: desiredX, y: curr.y || 0 }, true);
+          }
         }
-      } catch (err) {
-        // ignore; cannot recover
+      } catch (e) {
+        // non-fatal
       }
-    }
 
-    this._lastImpulseAt = nowMs;
+      // prevent immediate rearm until leaves envelope or makes downward progress
+      this._armed = false;
+      this._stallStartAt = null;
+    }
   }
 
   // lifecycle helpers

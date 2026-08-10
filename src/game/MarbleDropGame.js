@@ -6,7 +6,7 @@ import { CollisionResolver } from '../systems/CollisionResolver.js';
 import { FeedbackService } from '../systems/FeedbackService.js';
 import { Clock } from '../core/Clock.js';
 import { COLLISION_FEEDBACK_MS } from '../config/constants.js';
-import { Gacoan } from '../entities/Gacoan.js';
+import { Gacoan, GACOAN_COLLIDER_RADIUS } from '../entities/Gacoan.js';
 import { Peg } from '../entities/Peg.js';
 import { Gate } from '../entities/Gate.js';
 import { Goal } from '../entities/Goal.js';
@@ -70,7 +70,7 @@ export class MarbleDropGame {
     this.operationCard = operationCard || null;
 
     // Stall guard: monitors active gacoan during FALLING and applies small deterministic impulse to escape peg stalls
-    this.stallGuard = new GacoanStallGuard({ session: this.session, physics: this.physics });
+    this.stallGuard = new GacoanStallGuard({ session: this.session, physics: this.physics, getPegs: () => this.pegs, gacoanColliderRadius: GACOAN_COLLIDER_RADIUS });
   }
 
   async init() {

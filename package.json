@@ -22,6 +22,7 @@
     "test:final-wiring": "node tests/final-app-wiring.test.mjs",
     "test:presentation-upgrade": "node tests/operation-card.test.mjs && node tests/gate-png.test.mjs && node tests/result-presentation.test.mjs",
     "test:stall-guard": "node tests/gacoan-stall-guard.test.mjs",
+    "test:drop-position": "node tests/drop-position.test.mjs",
     "check": "npm run assets:index && npm run assets:validate && npm run assets:level && npm run assets:visual && npm run test:foundation && npm run test:core && npm run test:feedback && npm run test:lifecycle && npm run test:gate-lock && npm run test:visual && npm run test:parity && npm run test:telemetry && npm run test:completion && npm run test:final-wiring && npm run test:presentation-upgrade && npm run test:stall-guard && npm run build"
   },
   "dependencies": {

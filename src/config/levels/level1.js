@@ -12,8 +12,8 @@ export const LEVEL_1 = Object.freeze({
     max: 100,
   },
   dropZone: {
-    minX: 360,
-    maxX: 1560,
+    minX: 58,
+    maxX: 1862,
     y: 80,
   },
   pegs: [

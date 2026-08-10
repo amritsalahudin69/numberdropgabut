@@ -1,8 +1,8 @@
 import { Sprite, Container, Graphics } from 'pixi.js';
 
 // Visual and physics dimensions are intentionally decoupled
-const GACOAN_VISUAL_SIZE = 58;        // radiusPx for sprite dimension (diameter = 116×116)
-const GACOAN_COLLIDER_RADIUS = 40;    // physics collider radius (unchanged from original)
+export const GACOAN_VISUAL_SIZE = 58;        // radiusPx for sprite dimension (diameter = 116×116)
+export const GACOAN_COLLIDER_RADIUS = 40;    // physics collider radius (unchanged from original)
 
 export class Gacoan {
   constructor() {
@@ -188,6 +188,22 @@ export class Gacoan {
       this.container.destroy({ children: true });
       this.container = null;
       this.sprite = null;
+    }
+  }
+
+  // Ensure horizontal velocity has at least minimum speed (m/s) in given direction (-1 left, 1 right)
+  ensureHorizontalEscapeVelocity(direction = 1, minSpeedMeters = 0.4) {
+    if (!this.body) return;
+    try {
+      const curr = this.body.linvel();
+      const currX = curr && typeof curr.x === 'number' ? curr.x : 0;
+      const currY = curr && typeof curr.y === 'number' ? curr.y : 0;
+      const desiredX = (Math.abs(currX) >= Math.abs(minSpeedMeters)) ? currX : (minSpeedMeters * (direction >= 0 ? 1 : -1));
+      if (typeof this.body.setLinvel === 'function') {
+        this.body.setLinvel({ x: desiredX, y: currY }, true);
+      }
+    } catch (e) {
+      // best-effort, ignore failures
     }
   }
 }
