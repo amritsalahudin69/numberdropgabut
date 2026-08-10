@@ -26,6 +26,11 @@ export class MarbleDropSession {
     this.holdStartedAt = 0;
     this.holdUntil = 0;
     this.postHoldAction = null;
+
+    // Completion contract
+    this._completionRequested = false;
+    this._completionReason = null;
+    this._completionSuccess = null;
   }
 
   transitionTo(newState) {
@@ -192,6 +197,30 @@ export class MarbleDropSession {
     this.holdStartedAt = 0;
     this.holdUntil = 0;
     this.postHoldAction = null;
+    this._completionRequested = false;
+    this._completionReason = null;
+    this._completionSuccess = null;
     this.state = GAMEPLAY_STATE.DESTROYED;
+  }
+
+  requestCompletion({ reason, success }) {
+    if (this._completionRequested) {
+      return;
+    }
+    this._completionRequested = true;
+    this._completionReason = reason;
+    this._completionSuccess = Boolean(success);
+  }
+
+  isCompletionRequested() {
+    return this._completionRequested;
+  }
+
+  getCompletionReason() {
+    return this._completionReason;
+  }
+
+  isCompletionSuccess() {
+    return this._completionSuccess;
   }
 }
