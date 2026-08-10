@@ -11,6 +11,7 @@ import { Peg } from '../entities/Peg.js';
 import { Gate } from '../entities/Gate.js';
 import { Goal } from '../entities/Goal.js';
 import { RunRecorder } from '../systems/RunRecorder.js';
+import { GacoanStallGuard } from '../systems/GacoanStallGuard.js';
 
 import { BackgroundLayer } from '../rendering/BackgroundLayer.js';
 import { VISUAL_ASSETS } from '../config/visualAssets.js';
@@ -67,6 +68,9 @@ export class MarbleDropGame {
 
     this.soundService = soundService || null;
     this.operationCard = operationCard || null;
+
+    // Stall guard: monitors active gacoan during FALLING and applies small deterministic impulse to escape peg stalls
+    this.stallGuard = new GacoanStallGuard({ session: this.session, physics: this.physics });
   }
 
   async init() {
@@ -237,6 +241,11 @@ export class MarbleDropGame {
 
       // Clear consumed gate IDs when active gacoan ownership ends
       this.consumedGateIds.clear();
+
+      // Notify stall guard
+      if (this.stallGuard && typeof this.stallGuard.onActiveGacoanCleanup === 'function') {
+        try { this.stallGuard.onActiveGacoanCleanup(); } catch (e) {}
+      }
     }
 
     for (const p of this.pegs) p.destroy();
@@ -341,6 +350,17 @@ export class MarbleDropGame {
     // Sync active gacoan position (only when not frozen / falling)
     if (this.activeGacoan && state === GAMEPLAY_STATE.FALLING) {
       this.activeGacoan.syncFromPhysics();
+
+      // Update stall guard to detect and resolve peg stalls
+      try {
+        if (this.stallGuard && typeof this.stallGuard.update === 'function') {
+          this.stallGuard.update(this.clock.now(), deltaSeconds);
+        }
+      } catch (e) {
+        // Non-fatal
+        console.error('[MarbleDropGame] stallGuard.update error', e);
+      }
+
       this.checkOutOfBounds();
     }
 
@@ -667,6 +687,11 @@ export class MarbleDropGame {
     // Clear consumed gate IDs when active gacoan ownership ends
     this.consumedGateIds.clear();
 
+    // Notify stall guard
+    if (this.stallGuard && typeof this.stallGuard.onActiveGacoanCleanup === 'function') {
+      try { this.stallGuard.onActiveGacoanCleanup(); } catch (e) {}
+    }
+
     if (this.session.getState() === GAMEPLAY_STATE.CLEANUP) {
       this.session.finishCleanup();
       
@@ -691,6 +716,11 @@ export class MarbleDropGame {
       } catch (e) {
         // non-fatal
       }
+    }
+
+    // Reset stall guard
+    if (this.stallGuard && typeof this.stallGuard.onReset === 'function') {
+      try { this.stallGuard.onReset(); } catch (e) {}
     }
 
     this.clearLevelEntities();
