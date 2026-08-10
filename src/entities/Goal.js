@@ -38,8 +38,13 @@ export class Goal {
     if (texture) {
       const sprite = new Sprite(texture);
       sprite.anchor.set(0.5, 1);
+      
+      //---------------------------------------------------------
       // Use height as desired size, preserve aspect ratio
-      const desiredHeight = Math.max(1, Math.round(height));
+      // const desiredHeight = Math.max(1, Math.round(height)); //originalnya! UBAH UKURAN TARGET BAWAH DISINI
+      const desiredHeight = 180;
+      //
+      // -------------------------------------------------------------
       const texW = Math.max(1, texture.baseTexture?.width || texture.width || desiredHeight);
       const texH = Math.max(1, texture.baseTexture?.height || texture.height || desiredHeight);
       const aspect = texW / texH;
