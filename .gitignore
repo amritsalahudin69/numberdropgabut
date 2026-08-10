@@ -1,5 +1,6 @@
 /node_modules
 /public/assets/backgrounds/*.png
+/public/assets/marbledrop/background/*.png
 /public/assets/backgrounds/*.webp
 /public/assets/backgrounds/*.jpg
 /public/assets/numbers/*.png
