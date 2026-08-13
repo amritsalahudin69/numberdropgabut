@@ -1,5 +1,5 @@
 export const VISUAL_ASSETS = Object.freeze({
-  background: '/assets/marbledrop/background/Artboard 15.png',
+  background: '/assets/marbledrop/background/Artboard 1.png',
   peg: null,
   gate: null,
   goal: null,

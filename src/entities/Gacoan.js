@@ -2,7 +2,7 @@ import { Sprite, Container, Graphics } from 'pixi.js';
 
 // Visual and physics dimensions are intentionally decoupled
 export const GACOAN_VISUAL_SIZE = 58;        // radiusPx for sprite dimension (diameter = 116×116)
-export const GACOAN_COLLIDER_RADIUS = 40;    // physics collider radius (unchanged from original)
+export const GACOAN_COLLIDER_RADIUS = 60;    // physics collider radius (unchanged from original)
 
 export class Gacoan {
   constructor() {
