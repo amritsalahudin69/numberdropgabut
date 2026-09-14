@@ -12,6 +12,7 @@ import { Gate } from '../entities/Gate.js';
 import { Goal } from '../entities/Goal.js';
 import { RunRecorder } from '../systems/RunRecorder.js';
 import { GacoanStallGuard } from '../systems/GacoanStallGuard.js';
+import { MarbleDropObstacleSystem } from '../systems/MarbleDropObstacleSystem.js';
 
 import { BackgroundLayer } from '../rendering/BackgroundLayer.js';
 import { VISUAL_ASSETS } from '../config/visualAssets.js';
@@ -61,6 +62,11 @@ export class MarbleDropGame {
     this.gates = [];
     this.goals = [];
     this.activeGacoan = null;
+    this.obstacleSystem = new MarbleDropObstacleSystem({
+      physicsWorld: this.physics,
+      parentContainer: this.container,
+      registry: this.registry,
+    });
     this.backgroundLayer = null;
 
     this.eventQueue = null;
@@ -199,6 +205,9 @@ export class MarbleDropGame {
       }
     }
 
+    // Additive special physical obstacles; Peg / Gate / Goal remain authoritative.
+    this.obstacleSystem.build(this.level.obstacles || []);
+
     // Build Goals
     for (const gl of this.level.goals) {
       const goal = new Goal();
@@ -251,6 +260,10 @@ export class MarbleDropGame {
     for (const p of this.pegs) p.destroy();
     for (const g of this.gates) g.destroy();
     for (const gl of this.goals) gl.destroy();
+
+    if (this.obstacleSystem && typeof this.obstacleSystem.clear === 'function') {
+      this.obstacleSystem.clear();
+    }
 
     this.pegs = [];
     this.gates = [];
@@ -328,6 +341,11 @@ export class MarbleDropGame {
     // Update gate movement
     for (const g of this.gates) {
       g.update(deltaSeconds);
+    }
+
+    // Update additive kinematic obstacles before the physics step.
+    if (this.obstacleSystem && typeof this.obstacleSystem.update === 'function') {
+      this.obstacleSystem.update(deltaSeconds);
     }
 
     // Step physics
@@ -435,6 +453,23 @@ export class MarbleDropGame {
       if (gHandle == null || !this.registry.get(gHandle)) return;
       // Ensure session still in FALLING (events may be from previous batch)
       if (this.session.getState() !== GAMEPLAY_STATE.FALLING) return;
+
+      // Additive obstacle collision seam; MovingBlock is physics-only.
+      if (targetMeta.type === 'obstacle') {
+        const nowMs = this.clock.now();
+        const obstacleId = targetMeta.id || targetMeta.entity?.id || null;
+        let result = { accepted: true, reason: 'physics_only' };
+        try {
+          if (this.obstacleSystem && typeof this.obstacleSystem.handleGacoanCollision === 'function') {
+            result = this.obstacleSystem.handleGacoanCollision({ obstacleId, gacoan: this.activeGacoan }) || result;
+          }
+        } catch (error) {
+          console.error('[MarbleDropGame] obstacle collision handler failed', error);
+          result = { accepted: false, reason: 'handler_error' };
+        }
+        this.runRecorder.recordCollision({ type: 'obstacle', entityId: obstacleId, accepted: result.accepted !== false, reason: result.reason || 'physics_only', timestampMs: nowMs });
+        return;
+      }
 
       // Peg: physics only, no gameplay operation — play peg sound optionally
       if (targetMeta.type === 'peg') {
@@ -739,6 +774,7 @@ export class MarbleDropGame {
       activeGacoanCount: this.activeGacoan ? 1 : 0,
       pegCount: this.pegs ? this.pegs.length : 0,
       gateCount: this.gates ? this.gates.length : 0,
+      obstacleCount: this.obstacleSystem ? this.obstacleSystem.obstacles.length : 0,
       goalCount: this.goals ? this.goals.length : 0,
       colliderRegistryCount: this.registry ? this.registry.size() : 0,
       feedbackVisible: this.feedback ? this.feedback.isVisible() : false,
@@ -761,6 +797,10 @@ export class MarbleDropGame {
     }
 
     this.clearLevelEntities();
+    if (this.obstacleSystem) {
+      try { this.obstacleSystem.destroy(); } catch {}
+      this.obstacleSystem = null;
+    }
     if (this.session) this.session.destroy();
     // Clear consumed gates on destroy
     this.consumedGateIds.clear();
