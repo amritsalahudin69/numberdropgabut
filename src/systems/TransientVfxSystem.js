@@ -39,9 +39,11 @@ export class TransientVfxSystem {
   getActiveEffectCount() { return this.effects.length; }
 
   trigger(event) {
-    if (!event || event.type !== 'hammer-impact') return false;
+    if (!event || !['hammer-impact', 'gear-impact', 'goal-success'].includes(event.type)) return false;
     if (!isFiniteNumber(event.x) || !isFiniteNumber(event.y)) return false;
-    return this._triggerHammerImpact(event);
+    if (event.type === 'hammer-impact') return this._triggerHammerImpact(event);
+    if (event.type === 'gear-impact') return this._triggerGearImpact(event);
+    return this._triggerGoalSuccess(event);
   }
 
   _ensureRenderOrder() {
@@ -96,6 +98,55 @@ export class TransientVfxSystem {
     return true;
   }
 
+  _triggerGearImpact(event) {
+    const radius = clamp(finiteNumber(event.radius, 54), 24, 120);
+    const clockwise = event.clockwise !== false;
+    const sparks = [];
+    const streaks = [];
+    for (let index = 0; index < 7; index += 1) {
+      const angle = (index / 7) * Math.PI * 2;
+      const inner = radius * 0.42;
+      const outer = inner + radius * 0.34;
+      const spark = new Graphics();
+      spark.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+      spark.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
+      spark.stroke({ width: 4, color: 0xffe08a, alpha: 0.95 });
+      sparks.push(spark);
+      const streakAngle = angle + (clockwise ? 0.18 : -0.18);
+      const streak = new Graphics();
+      streak.moveTo(Math.cos(streakAngle) * radius * 0.72, Math.sin(streakAngle) * radius * 0.72);
+      streak.lineTo(Math.cos(streakAngle) * radius * 1.04, Math.sin(streakAngle) * radius * 1.04);
+      streak.stroke({ width: 3, color: 0xffffff, alpha: 0.8 });
+      streaks.push(streak);
+    }
+    const ring = new Graphics();
+    ring.circle(0, 0, radius * 0.56).stroke({ width: 3, color: 0xffc857, alpha: 0.8 });
+    const effect = this._beginEffect('gear-impact', Number(event.x), Number(event.y), 0.20, [ring, ...sparks, ...streaks]);
+    Object.assign(effect, { ring, sparks, streaks, clockwise });
+    return true;
+  }
+
+  _triggerGoalSuccess(event) {
+    const flash = new Graphics();
+    flash.circle(0, 0, 36).fill({ color: 0xffffff, alpha: 1 });
+    const ring1 = new Graphics();
+    ring1.circle(0, 0, 50).stroke({ width: 5, color: 0x9dffb0, alpha: 0.95 });
+    const ring2 = new Graphics();
+    ring2.circle(0, 0, 70).stroke({ width: 4, color: 0x4ee87a, alpha: 0.8 });
+    const rays = [];
+    for (let index = 0; index < 11; index += 1) {
+      const angle = (index / 11) * Math.PI * 2;
+      const ray = new Graphics();
+      ray.moveTo(Math.cos(angle) * 28, Math.sin(angle) * 28);
+      ray.lineTo(Math.cos(angle) * 92, Math.sin(angle) * 92);
+      ray.stroke({ width: 4, color: 0xd8ffe1, alpha: 0.9 });
+      rays.push(ray);
+    }
+    const effect = this._beginEffect('goal-success', Number(event.x), Number(event.y), 0.36, [ring2, ring1, ...rays, flash]);
+    Object.assign(effect, { flash, ring1, ring2, rays });
+    return true;
+  }
+
   _startShake({ strength = 1, duration, amplitude } = {}) {
     if (!this.shakeTarget) return;
     const startingNewShake = this.shakeRemaining <= 0;
@@ -123,6 +174,21 @@ export class TransientVfxSystem {
           line.scale.set(0.9 + progress * 0.5);
           line.alpha = Math.max(0, 1 - progress * 1.4) * effect.strength;
         }
+      } else if (effect.type === 'gear-impact') {
+        effect.root.rotation = (effect.clockwise ? 1 : -1) * progress * 2.2;
+        effect.root.scale.set(0.9 + progress * 0.35);
+        effect.ring.scale.set(0.9 + progress * 0.45);
+        effect.ring.alpha = fade * 0.8;
+        for (const spark of effect.sparks) spark.alpha = Math.max(0, 1 - progress * 1.5);
+        for (const streak of effect.streaks) streak.alpha = Math.max(0, 1 - progress * 2);
+      } else {
+        effect.root.scale.set(0.8 + progress * 0.6);
+        effect.flash.alpha = Math.max(0, 1 - progress * 2.8);
+        effect.ring1.scale.set(0.85 + progress * 0.75);
+        effect.ring2.scale.set(0.75 + progress * 0.9);
+        effect.ring1.alpha = fade * 0.95;
+        effect.ring2.alpha = fade * 0.8;
+        for (const ray of effect.rays) ray.alpha = Math.max(0, 1 - progress * 1.6);
       }
       if (progress >= 1) this._removeEffect(effect);
     }

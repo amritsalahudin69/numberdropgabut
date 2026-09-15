@@ -493,6 +493,21 @@ export class MarbleDropGame {
           if ([event.x, event.y, event.directionX, event.directionY].every(Number.isFinite)) {
             this.transientVfx?.trigger?.(event);
           }
+        } else if (result.accepted === true && targetMeta.entity?.type === 'gear') {
+          const gear = targetMeta.entity;
+          const x = Number(gear.container?.x ?? gear.x);
+          const y = Number(gear.container?.y ?? gear.y);
+          if (Number.isFinite(x) && Number.isFinite(y)) {
+            this.transientVfx?.trigger?.({
+              type: 'gear-impact',
+              obstacleId: String(gear.id || 'gear'),
+              x,
+              y,
+              radius: gear.radius,
+              clockwise: gear.clockwise,
+              strength: 1,
+            });
+          }
         }
         this.runRecorder.recordCollision({ type: 'obstacle', entityId: obstacleId, accepted: result.accepted !== false, reason: result.reason || 'physics_only', timestampMs: nowMs });
         return;
@@ -671,6 +686,19 @@ export class MarbleDropGame {
           const goalSucceeded = nextValue === this.level.targetValue || (this.level.goals && this.level.goals[0] && nextValue === this.level.goals[0].value);
           if (goalSucceeded) {
             this.session.requestCompletion({ reason: 'target_reached', success: true });
+            const goal = targetMeta.entity;
+            const goalX = Number(goal?.container?.x ?? goal?.x);
+            const goalY = Number(goal?.container?.y ?? goal?.y);
+            if (Number.isFinite(goalX) && Number.isFinite(goalY)) {
+              this.transientVfx?.trigger?.({
+                type: 'goal-success',
+                goalId: String(goal?.id || goalId || 'goal'),
+                x: goalX,
+                y: goalY,
+                value: this.session.currentValue,
+                strength: 1,
+              });
+            }
           } else {
             const opsUsed = (typeof this.session.getOpsUsed === 'function') ? this.session.getOpsUsed() : (this.session.opsUsed !== undefined ? this.session.opsUsed : 0);
             const maxOps = this.session && typeof this.session.maxOps !== 'undefined' ? this.session.maxOps : (this.level && this.level.maxOps ? this.level.maxOps : 6);
