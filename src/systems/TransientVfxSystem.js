@@ -39,11 +39,13 @@ export class TransientVfxSystem {
   getActiveEffectCount() { return this.effects.length; }
 
   trigger(event) {
-    if (!event || !['hammer-impact', 'gear-impact', 'goal-success'].includes(event.type)) return false;
+    if (!event || !['hammer-impact', 'gear-impact', 'goal-success', 'peg-impact', 'moving-block-impact'].includes(event.type)) return false;
     if (!isFiniteNumber(event.x) || !isFiniteNumber(event.y)) return false;
     if (event.type === 'hammer-impact') return this._triggerHammerImpact(event);
     if (event.type === 'gear-impact') return this._triggerGearImpact(event);
-    return this._triggerGoalSuccess(event);
+    if (event.type === 'goal-success') return this._triggerGoalSuccess(event);
+    if (event.type === 'peg-impact') return this._triggerPegImpact(event);
+    return this._triggerMovingBlockImpact(event);
   }
 
   _ensureRenderOrder() {
@@ -147,6 +149,29 @@ export class TransientVfxSystem {
     return true;
   }
 
+  _triggerPegImpact(event) {
+    const radius = clamp(finiteNumber(event.radius, 15), 8, 60);
+    const pulse = new Graphics();
+    pulse.circle(0, 0, clamp(radius * 0.62, 8, 14)).fill({ color: 0xffffff, alpha: 0.7 });
+    const ring = new Graphics();
+    ring.circle(0, 0, clamp(radius * 1.45, 18, 28)).stroke({ width: 3, color: 0xfff1a8, alpha: 0.85 });
+    const effect = this._beginEffect('peg-impact', Number(event.x), Number(event.y), 0.14, [ring, pulse]);
+    Object.assign(effect, { pulse, ring });
+    return true;
+  }
+
+  _triggerMovingBlockImpact(event) {
+    const width = clamp(finiteNumber(event.width, 180), 24, 500);
+    const height = clamp(finiteNumber(event.height, 36), 18, 300);
+    const flash = new Graphics();
+    flash.roundRect(-width / 2, -height / 2, width, height, 6).stroke({ width: 4, color: 0xffffff, alpha: 1 });
+    const outer = new Graphics();
+    outer.roundRect(-width / 2, -height / 2, width, height, 8).stroke({ width: 3, color: 0x9deaff, alpha: 0.8 });
+    const effect = this._beginEffect('moving-block-impact', Number(event.x), Number(event.y), 0.18, [outer, flash]);
+    Object.assign(effect, { flash, outer });
+    return true;
+  }
+
   _startShake({ strength = 1, duration, amplitude } = {}) {
     if (!this.shakeTarget) return;
     const startingNewShake = this.shakeRemaining <= 0;
@@ -181,7 +206,7 @@ export class TransientVfxSystem {
         effect.ring.alpha = fade * 0.8;
         for (const spark of effect.sparks) spark.alpha = Math.max(0, 1 - progress * 1.5);
         for (const streak of effect.streaks) streak.alpha = Math.max(0, 1 - progress * 2);
-      } else {
+      } else if (effect.type === 'goal-success') {
         effect.root.scale.set(0.8 + progress * 0.6);
         effect.flash.alpha = Math.max(0, 1 - progress * 2.8);
         effect.ring1.scale.set(0.85 + progress * 0.75);
@@ -189,6 +214,16 @@ export class TransientVfxSystem {
         effect.ring1.alpha = fade * 0.95;
         effect.ring2.alpha = fade * 0.8;
         for (const ray of effect.rays) ray.alpha = Math.max(0, 1 - progress * 1.6);
+      }
+      if (effect.type === 'peg-impact') {
+        effect.root.scale.set(0.85 + progress * 0.45);
+        effect.pulse.alpha = Math.max(0, 0.7 - progress);
+        effect.ring.scale.set(0.85 + progress * 0.45);
+        effect.ring.alpha = (1 - progress) * 0.85;
+      } else if (effect.type === 'moving-block-impact') {
+        effect.root.scale.set(0.96 + progress * 0.18);
+        effect.flash.alpha = Math.max(0, 1 - progress * 1.35);
+        effect.outer.alpha = (1 - progress) * 0.8;
       }
       if (progress >= 1) this._removeEffect(effect);
     }

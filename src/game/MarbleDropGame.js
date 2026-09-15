@@ -508,6 +508,21 @@ export class MarbleDropGame {
               strength: 1,
             });
           }
+        } else if (result.accepted === true && (targetMeta.entity?.type === 'moving-block' || targetMeta.entity?.type === 'moving_block')) {
+          const movingBlock = targetMeta.entity;
+          const x = Number(movingBlock.currentX);
+          const y = Number(movingBlock.currentY);
+          if (Number.isFinite(x) && Number.isFinite(y)) {
+            this.transientVfx?.trigger?.({
+              type: 'moving-block-impact',
+              obstacleId: String(movingBlock.id || 'moving-block'),
+              x,
+              y,
+              width: movingBlock.width,
+              height: movingBlock.height,
+              strength: 1,
+            });
+          }
         }
         this.runRecorder.recordCollision({ type: 'obstacle', entityId: obstacleId, accepted: result.accepted !== false, reason: result.reason || 'physics_only', timestampMs: nowMs });
         return;
@@ -516,6 +531,19 @@ export class MarbleDropGame {
       // Peg: physics only, no gameplay operation — play peg sound optionally
       if (targetMeta.type === 'peg') {
         const nowMs = this.clock.now();
+        const peg = targetMeta.entity;
+        const x = Number(peg?.container?.x ?? peg?.x);
+        const y = Number(peg?.container?.y ?? peg?.y);
+        if (Number.isFinite(x) && Number.isFinite(y)) {
+          this.transientVfx?.trigger?.({
+            type: 'peg-impact',
+            obstacleId: String(peg?.id || 'peg'),
+            x,
+            y,
+            radius: peg?.radius,
+            strength: 1,
+          });
+        }
         this.runRecorder.recordCollision({
           type: 'peg',
           entityId: targetMeta.entity && targetMeta.entity.id ? targetMeta.entity.id : null,
