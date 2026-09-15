@@ -333,6 +333,10 @@ export class MarbleDropGame {
 
     try {
       this.session.beginDrop(gacoan);
+      this.runRecorder?.beginAttempt?.({
+        startValue: currentValue,
+        startedAtMs: this.clock.now(),
+      });
       return true;
     } catch (err) {
       if (handle !== null) this.registry.unregister(handle);
@@ -340,6 +344,22 @@ export class MarbleDropGame {
       this.activeGacoan = null;
       return false;
     }
+  }
+
+  _recordAttemptEvent(type, payload = {}) {
+    return this.runRecorder?.recordAttemptEvent?.(type, {
+      ...payload,
+      at: payload.at ?? this.clock.now(),
+    });
+  }
+
+  _finishAttempt(outcome, reason) {
+    return this.runRecorder?.finishAttempt?.({
+      outcome,
+      reason,
+      finalValue: this.session.getCurrentValue(),
+      completedAtMs: this.clock.now(),
+    });
   }
 
   update(deltaSeconds = 1 / 60) {
@@ -493,6 +513,11 @@ export class MarbleDropGame {
           if ([event.x, event.y, event.directionX, event.directionY].every(Number.isFinite)) {
             this.transientVfx?.trigger?.(event);
           }
+          this._recordAttemptEvent('hammer-hit', {
+            obstacleId: event.obstacleId,
+            x: event.x,
+            y: event.y,
+          });
         } else if (result.accepted === true && targetMeta.entity?.type === 'gear') {
           const gear = targetMeta.entity;
           const x = Number(gear.container?.x ?? gear.x);
@@ -508,6 +533,7 @@ export class MarbleDropGame {
               strength: 1,
             });
           }
+          this._recordAttemptEvent('gear-hit', { obstacleId: String(gear.id || 'gear'), x, y });
         } else if (result.accepted === true && (targetMeta.entity?.type === 'moving-block' || targetMeta.entity?.type === 'moving_block')) {
           const movingBlock = targetMeta.entity;
           const x = Number(movingBlock.currentX);
@@ -523,6 +549,11 @@ export class MarbleDropGame {
               strength: 1,
             });
           }
+          this._recordAttemptEvent('moving-block-hit', {
+            obstacleId: String(movingBlock.id || 'moving-block'),
+            x,
+            y,
+          });
         }
         this.runRecorder.recordCollision({ type: 'obstacle', entityId: obstacleId, accepted: result.accepted !== false, reason: result.reason || 'physics_only', timestampMs: nowMs });
         return;
@@ -544,6 +575,11 @@ export class MarbleDropGame {
             strength: 1,
           });
         }
+        this._recordAttemptEvent('peg-hit', {
+          obstacleId: String(peg?.id || 'peg'),
+          x,
+          y,
+        });
         this.runRecorder.recordCollision({
           type: 'peg',
           entityId: targetMeta.entity && targetMeta.entity.id ? targetMeta.entity.id : null,
@@ -640,6 +676,7 @@ export class MarbleDropGame {
           // If resolution failed due to arithmetic/config invariant, follow existing error behavior
           // and DO NOT silently clear consumedGateIds to avoid infinite retries.
           console.error('[MarbleDropGame] resolveOperationHit failed for gate:', gateId, res && res.err);
+          this._finishAttempt('error', 'resolver_error');
         }
       } else if (targetMeta.type === 'goal') {
         // Goals are terminal for the gacoan lifecycle — treat normally without gate blocking
@@ -651,6 +688,12 @@ export class MarbleDropGame {
           accepted: true,
           reason: 'terminal',
           timestampMs: nowMs,
+        });
+        const goalEntity = targetMeta.entity;
+        this._recordAttemptEvent('goal-hit', {
+          obstacleId: String(goalEntity?.id || goalId || 'goal'),
+          x: goalEntity?.container?.x ?? goalEntity?.x,
+          y: goalEntity?.container?.y ?? goalEntity?.y,
         });
 
         try {
@@ -714,6 +757,7 @@ export class MarbleDropGame {
           const goalSucceeded = nextValue === this.level.targetValue || (this.level.goals && this.level.goals[0] && nextValue === this.level.goals[0].value);
           if (goalSucceeded) {
             this.session.requestCompletion({ reason: 'target_reached', success: true });
+            this._finishAttempt('success', 'target_goal');
             const goal = targetMeta.entity;
             const goalX = Number(goal?.container?.x ?? goal?.x);
             const goalY = Number(goal?.container?.y ?? goal?.y);
@@ -732,6 +776,9 @@ export class MarbleDropGame {
             const maxOps = this.session && typeof this.session.maxOps !== 'undefined' ? this.session.maxOps : (this.level && this.level.maxOps ? this.level.maxOps : 6);
             if (opsUsed >= maxOps) {
               this.session.requestCompletion({ reason: 'max_ops_exhausted', success: false });
+              this._finishAttempt('failed', 'max_ops_exhausted');
+            } else {
+              this._finishAttempt('failed', 'non_target_goal');
             }
           }
 
@@ -741,6 +788,8 @@ export class MarbleDropGame {
             }
           } catch (e) {}
           this._startHold(res);
+        } else {
+          this._finishAttempt('error', 'resolver_error');
         }
       }
     });
@@ -781,6 +830,8 @@ export class MarbleDropGame {
     const worldW = this.level.world.width || 1920;
 
     if (pos.y > worldH + 100 || pos.x < -100 || pos.x > worldW + 100) {
+      this._recordAttemptEvent('out-of-bounds', { x: pos.x, y: pos.y });
+      this._finishAttempt('out_of_play', 'out_of_bounds');
       if (this.session.getState() === GAMEPLAY_STATE.FALLING) {
         this.session.beginCleanup();
       }
@@ -842,6 +893,7 @@ export class MarbleDropGame {
       try { this.stallGuard.onReset(); } catch (e) {}
     }
 
+    if (this.runRecorder?.activeAttempt) this._finishAttempt('failed', 'manual_restart');
     this.clearLevelEntities('full-reset');
     this.session.reset(this.level);
     this.buildLevelEntities();
