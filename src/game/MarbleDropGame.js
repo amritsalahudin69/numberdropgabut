@@ -13,6 +13,7 @@ import { Goal } from '../entities/Goal.js';
 import { RunRecorder } from '../systems/RunRecorder.js';
 import { GacoanStallGuard } from '../systems/GacoanStallGuard.js';
 import { MarbleDropObstacleSystem } from '../systems/MarbleDropObstacleSystem.js';
+import { TransientVfxSystem } from '../systems/TransientVfxSystem.js';
 
 import { BackgroundLayer } from '../rendering/BackgroundLayer.js';
 import { VISUAL_ASSETS } from '../config/visualAssets.js';
@@ -58,6 +59,11 @@ export class MarbleDropGame {
     }
 
     this.container = new Container();
+    // Stable render-only root: physics bodies remain owned by PhysicsWorld.
+    this.transientVfx = new TransientVfxSystem({
+      parent: this.container,
+      shakeTarget: this.container,
+    });
     this.pegs = [];
     this.gates = [];
     this.goals = [];
@@ -153,7 +159,7 @@ export class MarbleDropGame {
   }
 
   buildLevelEntities() {
-    this.clearLevelEntities();
+    this.clearLevelEntities('level-reset');
 
     const parent = this.container;
 
@@ -241,7 +247,9 @@ export class MarbleDropGame {
     }
   }
 
-  clearLevelEntities() {
+  clearLevelEntities(reason = 'level-reset') {
+    this.transientVfx?.clear?.(reason);
+
     if (this.activeGacoan) {
       const handle = this.activeGacoan.getColliderHandle();
       if (handle !== null) this.registry.unregister(handle);
@@ -365,6 +373,10 @@ export class MarbleDropGame {
       }
     }
 
+    // Advance transient VFX after collision processing so accepted impacts
+    // receive their first visual update in the same gameplay frame.
+    this.transientVfx?.update?.(deltaSeconds);
+
     // Sync active gacoan position (only when not frozen / falling)
     if (this.activeGacoan && state === GAMEPLAY_STATE.FALLING) {
       this.activeGacoan.syncFromPhysics();
@@ -466,6 +478,21 @@ export class MarbleDropGame {
         } catch (error) {
           console.error('[MarbleDropGame] obstacle collision handler failed', error);
           result = { accepted: false, reason: 'handler_error' };
+        }
+        if (result.accepted === true && targetMeta.entity?.type === 'hammer') {
+          const hammer = targetMeta.entity;
+          const event = {
+            type: 'hammer-impact',
+            obstacleId: String(hammer.id || 'hammer'),
+            x: hammer.currentHeadX,
+            y: hammer.currentHeadY,
+            directionX: hammer.headVelocityX,
+            directionY: hammer.headVelocityY,
+            strength: 1,
+          };
+          if ([event.x, event.y, event.directionX, event.directionY].every(Number.isFinite)) {
+            this.transientVfx?.trigger?.(event);
+          }
         }
         this.runRecorder.recordCollision({ type: 'obstacle', entityId: obstacleId, accepted: result.accepted !== false, reason: result.reason || 'physics_only', timestampMs: nowMs });
         return;
@@ -641,7 +668,8 @@ export class MarbleDropGame {
           }
 
           // Check completion conditions
-          if (nextValue === this.level.targetValue || (this.level.goals && this.level.goals[0] && nextValue === this.level.goals[0].value)) {
+          const goalSucceeded = nextValue === this.level.targetValue || (this.level.goals && this.level.goals[0] && nextValue === this.level.goals[0].value);
+          if (goalSucceeded) {
             this.session.requestCompletion({ reason: 'target_reached', success: true });
           } else {
             const opsUsed = (typeof this.session.getOpsUsed === 'function') ? this.session.getOpsUsed() : (this.session.opsUsed !== undefined ? this.session.opsUsed : 0);
@@ -758,7 +786,7 @@ export class MarbleDropGame {
       try { this.stallGuard.onReset(); } catch (e) {}
     }
 
-    this.clearLevelEntities();
+    this.clearLevelEntities('full-reset');
     this.session.reset(this.level);
     this.buildLevelEntities();
   }
@@ -796,10 +824,14 @@ export class MarbleDropGame {
       this.pointerHandler = null;
     }
 
-    this.clearLevelEntities();
+    this.clearLevelEntities('destroy');
     if (this.obstacleSystem) {
       try { this.obstacleSystem.destroy(); } catch {}
       this.obstacleSystem = null;
+    }
+    if (this.transientVfx) {
+      this.transientVfx.destroy();
+      this.transientVfx = null;
     }
     if (this.session) this.session.destroy();
     // Clear consumed gates on destroy
