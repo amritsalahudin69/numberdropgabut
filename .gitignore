@@ -1,9 +1,17 @@
 /node_modules
 /public/assets/backgrounds/*.png
+*.png
 /public/assets/marbledrop/background/*.png
 /public/assets/backgrounds/*.webp
+*.webp
 /public/assets/backgrounds/*.jpg
+*.jpg
 /public/assets/numbers/*.png
+.png
 /public/assets/gif/*.gif
+*.gif
 /dist
 desktop.ini
+
+tar --exclude='./public/assets/backgrounds' --exclude='./public/assets/marbledrop' --exclude='./public/assets/numbers' --exclude='./public/assets/gif' --exclude='./.git' --exclude='./node_modules' --exclude='./dist' -czf "../$(basename "$PWD")-$(date +%Y%m%d-%H%M).tar.gz" .
+
