@@ -15,6 +15,7 @@ import { GameHud } from '../ui/GameHud.js';
 import { ResultOverlay } from '../ui/ResultOverlay.js';
 import { ResultService } from '../systems/ResultService.js';
 import { JsonExporter } from '../systems/JsonExporter.js';
+import { createNumberDropArenaSeed, generateNumberDropArena } from '../systems/NumberDropArenaGenerator.js';
 
 export const APP_STATE = Object.freeze({
   CREATED: 'CREATED',
@@ -32,7 +33,11 @@ export class MarbleDropApp {
     this.textureCache = deps.textureCache || new NumberTextureCache();
     this.visualTextureCache = deps.visualTextureCache || new VisualTextureCache();
     this._visualTextureCacheProvided = !!deps.visualTextureCache;
-    this.level = deps.level || LEVEL_1;
+    this.sourceLevel = deps.level || LEVEL_1;
+    const arenaSeed = deps.arenaSeed ?? createNumberDropArenaSeed();
+    const generatedArena = generateNumberDropArena(this.sourceLevel, arenaSeed);
+    this.level = generatedArena.level;
+    this.arenaMetadata = generatedArena.metadata;
     this.game = deps.game || null;
     this.state = APP_STATE.CREATED;
     this.tickerCallback = null;
@@ -250,12 +255,18 @@ export class MarbleDropApp {
     if (this.game) {
       const snap = this.game.getSnapshot();
       snap.appState = this.state;
+      snap.arenaMetadata = this.getArenaMetadata();
       return snap;
     }
     return {
       appState: this.state,
       gameState: 'UNINITIALIZED',
+      arenaMetadata: this.getArenaMetadata(),
     };
+  }
+
+  getArenaMetadata() {
+    return { ...this.arenaMetadata };
   }
 
   reset() {

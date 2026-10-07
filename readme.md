@@ -95,3 +95,9 @@ radiusPx = 58
 
 
 besar kecilnya gif : \src\config\constants.js export const FEEDBACK_LOGICAL_SIZE = 500;
+
+## Procedural MarbleDrop Arena
+
+Setiap instance `MarbleDropApp` membuat satu arena dari konfigurasi level sumber menggunakan seed. Generator hanya mengubah posisi horizontal peg dan dynamic gate; goals, operasi, obstacle khusus, fisika, dan background tetap mengikuti konfigurasi level. Reset memakai arena instance yang sama.
+
+Untuk reproduksi/debug, injeksikan `arenaSeed` saat membuat `MarbleDropApp`. Metadata seed dan fingerprint tersedia melalui `app.getArenaMetadata()` serta `app.getGameSnapshot().arenaMetadata`. Seed default dibuat sekali per instance menggunakan Web Crypto.

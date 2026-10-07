@@ -7,3 +7,7 @@
 /public/assets/gif/*.gif
 /dist
 desktop.ini
+
+C:\Users\HWI-ADMIN\Documents\amritsalahudin\hehehe\numberdropgabut\public\assets\marbledrop
+
+tar --exclude='./public/assets/backgrounds' --exclude='./public/assets/marbledrop' --exclude='./public/assets/numbers' --exclude='./public/assets/gif' --exclude='./.git' --exclude='./node_modules' --exclude='./dist' -czf "../$(basename "$PWD")-$(date +%Y%m%d-%H%M).tar.gz" .
